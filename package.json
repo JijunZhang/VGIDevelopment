@@ -1,0 +1,25 @@
+{
+  "name": "expresstestv0.1",
+  "version": "0.0.1",
+  "description": "This is my express test program.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Qian Long",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "compression": "^1.6.2",
+    "connect-flash": "^0.1.1",
+    "crypto": "0.0.3",
+    "ejs": "^2.5.6",
+    "express": "^4.15.2",
+    "express-session": "^1.15.2",
+    "method-override": "^2.3.8",
+    "mongoose": "^4.9.3",
+    "morgan": "^1.8.1",
+    "passport": "^0.3.2",
+    "passport-local": "^1.0.0"
+  }
+}
