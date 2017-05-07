@@ -1,6 +1,6 @@
-var passport = require('passport'),
-    localStrategy = require('passport-local').Strategy,
-    User =  require('mongoose').model('User');
+var passport = require('passport');
+var localStrategy = require('passport-local').Strategy;
+var User = require('mongoose').model('User');
 
 module.exports = function() {
     passport.use(new localStrategy(function(username, password, done) {
@@ -13,11 +13,13 @@ module.exports = function() {
 
             if (!user) {
                 return done(null, false, {
+                    //用户名不存在
                     message: 'Unknown user'
                 });
             }
             if (!user.authenticate(passport)) {
                 return done(null, false, {
+                    //密码不匹配
                     message: 'Invalid passport'
                 });
             }

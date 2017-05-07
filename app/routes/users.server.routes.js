@@ -14,17 +14,15 @@ module.exports = function(app) {
     app.param('userId', users.userByID);
 
     // Set up the 'signup' routes 
-	app.route('/signup')
-	   .get(users.renderSignup)
-	   .post(users.signup);
+    app.route('/signup')
+        .post(users.signup);
 
-	// Set up the 'signin' routes 
-	app.route('/signin')
-	   .get(users.renderSignin)
-	   .post(passport.authenticate('local', {
-			successRedirect: '/',
-			failureRedirect: '/signin',
-			failureFlash: true
-	   }));
+    // Set up the 'signin' routes 
+    app.route('/signin')
+        .post(passport.authenticate('local', {
+            successRedirect: '/',
+            failureRedirect: '/signin',
+            failureFlash: true
+        }));
 
 };
