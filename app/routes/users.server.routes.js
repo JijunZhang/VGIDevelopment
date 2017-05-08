@@ -1,5 +1,5 @@
-var users = require('../../app/controllers/users.server.controller'),
-    passport = require('passport');
+var users = require('../../app/controllers/users.server.controller');
+var passport = require('passport');
 
 module.exports = function(app) {
     app.route('/users')
@@ -13,15 +13,12 @@ module.exports = function(app) {
 
     app.param('userId', users.userByID);
 
-    // Set up the 'signup' routes 
-    app.route('/signup')
-        .post(users.signup);
-
-    // Set up the 'signin' routes 
-    app.route('/signin')
+    //  处理用户相关的路由请求
+    app.route('/users/register')    //用户注册
+        .post(users.register);
+    
+    app.route('/users/login')
         .post(passport.authenticate('local', {
-            successRedirect: '/',
-            failureRedirect: '/signin',
             failureFlash: true
         }));
 

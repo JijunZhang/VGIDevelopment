@@ -1,5 +1,6 @@
-var User = require('mongoose').model('User'),
-    passport = require('passport');
+var User = require('mongoose').model('User');
+var passport = require('passport');
+var flash = require('../../include/utils').flash;
 
 // Create a new error handling controller method
 var getErrorMessage = function(err) {
@@ -29,44 +30,45 @@ var getErrorMessage = function(err) {
 	return message;
 };
 
-// Create a new controller method that creates new 'regular' users
-exports.signup = function(req, res, next) {
-	// If user is not connected, create and login a new user, otherwise redirect the user back to the main application page
-	if (!req.user) {
-		// Create a new 'User' model instance
-		var user = new User(req.body);
-		var message = null;
+/**
+* 用户注册控制方法/Post method to register a new user
+*
+* @param {Object} req the request object
+* @param {Object} res the response object
+*/ 
+exports.register = function(req, res, next) {
+	var username = req.body.username;
+	var password = req.body.password;
+	var user = new User({username: username});
+	var message;
 
-		// Set the user provider property
-		user.provider = 'local';
-
-		// Try saving the new user document
-		user.save(function(err) {
-			// If an error occurs, use flash messages to report the error
-			if (err) {
-				// Use the error handling method to get the error message
-				var message = getErrorMessage(err);
-
-				// Set the flash messages
-				req.flash('error', message);
-
-				// Redirect the user back to the signup page
-				return res.redirect('/signup');
-			}
-
-			// If the user was created successfully use the Passport 'login' method to login
-			req.login(user, function(err) {
-				// If a login error occurs move to the next middleware
-				if (err) return next(err);
-
-				// Redirect the user back to the main application page
-				return res.redirect('/');
-			});
-		});
-	} else {
-		return res.redirect('/');
-	}
+	User.register(user, password, function(error, account) {
+		if (error) {
+                if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('exists') > -1) {
+                    message = flash(null, 'Sorry. That username already exists. Try again.');
+                }
+                else if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('argument not set')) {
+                    message =  flash (null, 'It looks like you\'re missing a required argument. Try again.');
+                }
+                else {
+                    message = flash(null, 'Sorry. There was an error processing your request. Please try again or contact technical support.');
+                }
+                res.send(message);
+            }
+            else {
+                //  用户成功注册
+                res.send('Successfully registered user!');
+            }
+	});
 };
+
+/**
+* 用户登录路由/Login method
+* 
+* @param {Object} req the request object
+* @param {Object} res the response object
+*/ 
+
 
 // Create a new controller method that creates new 'OAuth' users
 exports.saveOAuthUserProfile = function(req, profile, done) {

@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var crypto = require('crypto');
 var jwt = require('jwt-simple');
+var passportLocalMongoose = require('passport-local-mongoose');
 
 var TOKENSECRET = 'isie.sgg.whu.edu.cn'
 
@@ -18,7 +19,7 @@ var TokenSchema = new Schema({
 });
 
 //  设置Token静态方法过期时间
-Token.statics.hasExpired = function(created) {
+TokenSchema.statics.hasExpired = function(created) {
     var now = new Date();
     var diff = (now.getTime() - created);
     return diff > config.ttl;
@@ -47,7 +48,7 @@ var UserSchema = new Schema({
         index: true,
         match: [/.+\@.+\..+/, "Please fill a valid email address"]
     },
-    passward: {
+    password: {
         //  密码
         type: String,
         // 设置密码规则
@@ -103,7 +104,7 @@ var UserSchema = new Schema({
     },
 });
 
-UserSchema.plugin(passportLocalMongoose, { usernameField: 'email' });
+UserSchema.plugin(passportLocalMongoose);
 
 //  定义用户模型的虚拟属性
 UserSchema.virtual('fullName').get(function() {
@@ -187,6 +188,46 @@ UserSchema.statics.createUserToken = function(email, cb) {
         });
     });
 };
+
+//  
+UserSchema.statics.invalidateUserToken = function(email, cb) {
+    var self = this;
+    this.findOne({ email: email }, function(err, usr) {
+        if (err || !usr) {
+            console.log('err');
+        }
+        usr.token = null;
+        usr.save(function(err, usr) {
+            if (err) {
+                cb(err, null);
+            } else {
+                cb(false, 'removed');
+            }
+        });
+    });
+};
+
+//  
+UserSchema.statics.generateResetToken = function(email, cb) {
+    console.log("in generateResetToken....");
+    this.findUserByEmailOnly(email, function(err, user) {
+        if (err) {
+            cb(err, null);
+        } else if (user) {
+            //Generate reset token and URL link; also, create expiry for reset token
+            user.reset_token = require('crypto').randomBytes(32).toString('hex');
+            var now = new Date();
+            var expires = new Date(now.getTime() + (config.resetTokenExpiresMinutes * 60 * 1000)).getTime();
+            user.reset_token_expires_millis = expires;
+            user.save();
+            cb(false, user);
+        } else {
+            //TODO: This is not really robust and we should probably return an error code or something here
+            cb(new Error('No user with that email found.'), null);
+        }
+    });
+};
+
 
 // Find possible not used username
 UserSchema.statics.findUniqueUsername = function(username, suffix, callback) {
