@@ -36,11 +36,11 @@ var getErrorMessage = function(err) {
 * @param {Object} req the request object
 * @param {Object} res the response object
 */ 
-exports.register = function(req, res, next) {
+exports.register = function(req, res) {
 	var username = req.body.username;
 	var password = req.body.password;
 	var user = new User({username: username});
-	var message;
+	var message = flash(null, null);
 
 	User.register(user, password, function(error, account) {
 		if (error) {
@@ -63,115 +63,43 @@ exports.register = function(req, res, next) {
 };
 
 /**
-* 用户登录路由/Login method
+* 本地用户登录控制方法/Login method
 * 
 * @param {Object} req the request object
 * @param {Object} res the response object
 */ 
-
-
-// Create a new controller method that creates new 'OAuth' users
-exports.saveOAuthUserProfile = function(req, profile, done) {
-	// Try finding a user document that was registered using the current OAuth provider
-	User.findOne({
-		provider: profile.provider,
-		providerId: profile.providerId
-	}, function(err, user) {
-		// If an error occurs continue to the next middleware
-		if (err) {
-			return done(err);
-		} else {
-			// If a user could not be found, create a new user, otherwise, continue to the next middleware
-			if (!user) {
-				// Set a possible base username
-				var possibleUsername = profile.username || ((profile.email) ? profile.email.split('@')[0] : '');
-
-				// Find a unique available username
-				User.findUniqueUsername(possibleUsername, null, function(availableUsername) {
-					// Set the available user name 
-					profile.username = availableUsername;
-					
-					// Create the user
-					user = new User(profile);
-
-					// Try saving the new user document
-					user.save(function(err) {
-						// Continue to the next middleware
-						return done(err, user);
-					});
-				});
+exports.login = function(req, res) {
+	if (req.user) {
+		User.createUserToken(req.user.username, function(err, usersToken) {
+			// console.log('token generated: ' +usersToken);
+			// console.log(err);
+			if (err) {
+				//  生成Token值出错
+				res.json({error: 'Issue generating token'});
 			} else {
-				// Continue to the next middleware
-				return done(err, user);
+				res.json({token : usersToken});
 			}
-		}
-	});
-};
+		});
+	}
+}
 
-// Create a new controller method for signing out
-exports.signout = function(req, res) {
-	// Use the Passport 'logout' method to logout
-	req.logout();
-
-	// Redirect the user back to the main application page
-	res.redirect('/');
-};
-
-exports.create = function(req, res, next) {
-    var user = new User(req.body);
-
-    user.save(function(err)  {
-        if (err) {
-            return next(err);
-        } else {
-            res.json(user);
-        }
-    });
-};
-
-exports.list = function(req, res, next) {
-    User.find({}, function(err, users) {
-        if (err) {
-            return next(err);
-        } else {
-            res.json(users);
-        }
-    });
-};
-
-exports.read= function(req, res) {
-    res.json(req.user);
-};
-
-exports.userByID = function(req, res, next, id) {
-    User.findOne({
-        _id: id
-    }, function(err, user) {
-        if (err) {
-            return next(err);
-        } else {
-            req.user = user;
-            next();
-        }
-    });
-};
-
-exports.update = function(req, res, next) {
-    User.findByIdAndUpdate(req.user.id, req.body, function(err, user) {
-        if (err) {
-            return next(err);
-        } else {
-            res.json(user);
-        }
-    });
-};
-
-exports.delete = function(req, res, next) {
-    req.user.remove(function(err) {
-        if (err) {
-            return next(err);
-        } else {
-            res.json(user);
-        }
-    })
-};
+/**
+* 本地用户登出控制方法/Login method
+* 
+* @param {Object} req the request object
+* @param {Object} res the response object
+*/ 
+exports.login = function(req, res) {
+	if (req.user) {
+		User.createUserToken(req.user.username, function(err, usersToken) {
+			// console.log('token generated: ' +usersToken);
+			// console.log(err);
+			if (err) {
+				//  生成Token值出错
+				res.json({error: 'Issue generating token'});
+			} else {
+				res.json({token : usersToken});
+			}
+		});
+	}
+}

@@ -4,8 +4,6 @@ var config = require('./config'),
     compress = require('compress'),
     bodyParser = require('body-parser'),
     methodOverride = require('method-override'),
-    session = require('express-session'),
-    flash = require('connect-flash'),
     passport = require('passport');
     
 module.exports = function() {
@@ -22,21 +20,8 @@ module.exports = function() {
     }))
     app.use(bodyParser.json());
     app.use(methodOverride());
-
-    app.use(session({
-        saveUninitialized: true,
-        resave: true,
-        secret: config.sessionSecret
-    }))
-
-    app.set('views', './app/views');
-    app.set('view engine', 'ejs');
-
-    // Configure the flash messages middleware
-	app.use(flash());
     
     app.use(passport.initialize());
-    app.use(passport.session());
 
     require('../app/routes/users.server.routes.js')(app);
 

@@ -115,26 +115,6 @@ UserSchema.virtual('fullName').get(function() {
     this.lastName = splitName[1] || '';
 })
 
-// Use a pre-save middleware to hash the password
-UserSchema.pre('save', function(next) {
-    if (this.password) {
-        this.salt = new Buffer(crypto.randomBytes(16).toString('base64'), 'base64');
-        this.password = this.hashPassword(this.password);
-    }
-
-    next();
-});
-
-// Create an instance method for hashing a password
-UserSchema.methods.hashPassword = function(password) {
-    return crypto.pbkdf2Sync(password, this.salt, 10000, 64).toString('base64');
-};
-
-// Create an instance method for authenticating user
-UserSchema.methods.authenticate = function(password) {
-    return this.password === this.hashPassword(password);
-};
-
 //  定义用户模型的静态方法
 //  用户Token值的编解码操作
 UserSchema.statics.encode = function(data) {
@@ -145,13 +125,13 @@ UserSchema.statics.decode = function(data) {
 };
 
 // 查找用户
-UserSchema.statics.findUser = function(email, token, cb) {
+UserSchema.statics.findUser = function(username, token, cb) {
     var self = this;
-    this.findOne({ email: email }, function(err, usr) {
+    this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             cb(err, null);
         } else if (usr.token && usr.token.token && token === usr.token.token) {
-            cb(false, { email: usr.email, token: usr.token, date_created: usr.date_created, fullName: usr.fullName });
+            cb(false, { username: usr.username, token: usr.token, date_created: usr.date_created, fullName: usr.fullName });
         } else {
             cb(new Error('Token does not exist or does not match.'), null);
         }
@@ -169,14 +149,15 @@ UserSchema.statics.findUserByEmailOnly = function(email, cb) {
     });
 };
 
-UserSchema.statics.createUserToken = function(email, cb) {
+//  创建用户令牌静态方法
+UserSchema.statics.createUserToken = function(username, cb) {
     var self = this;
-    this.findOne({ email: email }, function(err, usr) {
+    this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             console.log('err');
         }
-        //Create a token and add to user and save
-        var token = self.encode({ email: email });
+        //创建一个令牌并且添加并保存到该文档中
+        var token = self.encode({ username: username });
         usr.token = new TokenModel({ token: token });
         usr.save(function(err, usr) {
             if (err) {
