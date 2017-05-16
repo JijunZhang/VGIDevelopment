@@ -1,221 +1,353 @@
 swagger: "2.0"
 info:
-  description: "这是武汉大学测绘学院空间信息研究所下的一份关于应急灾害志愿者地理信息系统后端应用程序接口文档。"  
-  title: "Swagger VGI"
-  termsOfService: "http://lqian.sgg.whu.edu.cn/terms/"
+  description: 这是武汉大学测绘学院空间信息研究所下的一份关于应急灾害志愿者地理信息系统后端应用程序接口文档。  
+  title: Swagger VGI
+  termsOfService: http://lqian.sgg.whu.edu.cn/terms/
   contact:
     name: Long Qian
     url: http://lqian.sgg.whu.edu.cn/support/
     email: 372972084@qq.com
   license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-  version: "1.0.0"
-host: "lqian.sgg.whu.edu.cn"
-basePath: "/v1"
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+host: lqian.sgg.whu.edu.cn
+basePath: /v1
 tags:
-- name: "user"
-  description: "关于用户对象的一些操作"
+- name: user
+  description: 关于用户对象的一些操作
   externalDocs:
-    description: "Find out more about our store"
-    url: "http://lqian.sgg.whu.edu.cn/"
+    description: Find out more about our store
+    url: http://lqian.sgg.whu.edu.cn/
 schemes:
-- "http"
+- http
 paths:
-  /user/login:
-    get:
+  /users/register:
+    post:
       tags:
-      - "user"
-      summary: "Logs user into the system"
-      description: ""
-      operationId: "loginUser"
-      produces:
-      - "application/xml"
-      - "application/json"
+      - users
+      summary: 处理用户注册业务
+      description: 客户端传递用户名、邮箱和密码来实现用户注册
+      operationId: registerUser
+      produces: 
+      - application/json
       parameters:
-      - name: "username"
-        in: "query"
-        description: "The user name for login"
-        required: true
-        type: "string"
-      - name: "password"
-        in: "query"
-        description: "The password for login in clear text"
-        required: true
-        type: "string"
+        - name: userRegisterParam
+          in: body
+          description: 用户注册参数
+          required: true
+          schema:
+            $ref: '#/definitions/userRegisterParam'
       responses:
         200:
-          description: "successful operation"
-          schema:
-            type: "string"
-          headers:
-            X-Rate-Limit:
-              type: "integer"
-              format: "int32"
-              description: "calls per hour allowed by the user"
-            X-Expires-After:
-              type: "string"
-              format: "date-time"
-              description: "date in UTC when token expires"
+          description: 用户注册成功
         400:
-          description: "Invalid username/password supplied"
-  /user/logout:
+          description: 用户注册失败
+  /users/login/local:
     get:
       tags:
-      - "user"
-      summary: "Logs out current logged in user session"
-      description: ""
-      operationId: "logoutUser"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters: []
-      responses:
-        default:
-          description: "successful operation"
-  /user/{username}:
-    get:
-      tags:
-      - "user"
-      summary: "Get user by user name"
-      description: ""
-      operationId: "getUserByName"
-      produces:
-      - "application/xml"
-      - "application/json"
+      - users
+      summary: 处理本地用户登录业务
+      description: 客户端传递用户名/邮箱和密码来实现用户登录
+      operationId: loginUser
+      produces: 
+      - application/json
       parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be fetched. Use user1 for testing. "
-        required: true
-        type: "string"
+        - name: idendity
+          in: query
+          description: 用户注册的用户名或邮箱
+          required: true
+          type: string
+        - name: password
+          in: query
+          description: 用户注册密码
+          required: true
+          type: string
       responses:
         200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/User"
+          description: 用户登录成功
         400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-    put:
+          description: 用户登录失败
+  /users/logout/local:
+    get:
       tags:
-      - "user"
-      summary: "Updated user"
-      description: "This can only be done by the logged in user."
-      operationId: "updateUser"
-      produces:
-      - "application/xml"
-      - "application/json"
+      - users
+      summary: 处理本地用户登出业务
+      description: 客户端传递Token令牌来实现用户登出
+      operationId: logoutUser
+      produces: 
+      - application/json
       parameters:
-      - name: "username"
-        in: "path"
-        description: "name that need to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
+        - name: idendity
+          in: query
+          description: 用户注册的用户名或邮箱
+          required: true
+          type: string
+        - name: password
+          in: query
+          description: 用户注册密码
+          required: true
+          type: string
       responses:
+        200:
+          description: 用户登录成功
         400:
-          description: "Invalid user supplied"
-        404:
-          description: "User not found"
-    delete:
-      tags:
-      - "user"
-      summary: "Delete user"
-      description: "This can only be done by the logged in user."
-      operationId: "deleteUser"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
+          description: 用户登录失败
 securityDefinitions:
   petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
-    flow: "implicit"
+    type: oauth2
+    authorizationUrl: http://petstore.swagger.io/oauth/dialog
+    flow: implicit
     scopes:
-      write:pets: "modify pets in your account"
-      read:pets: "read your pets"
+      write:pets: modify pets in your account
+      read:pets: read your pets
   api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
+    type: apiKey
+    name: api_key
+    in: header
 definitions:
-  User:
-    type: "object"
+  Token:
+    type: object
+    description: 志愿者用户账户令牌
     properties:
-      username:
-        type: "string"
-      nickname:
-        type: "string"
-      email:
-        type: "string"
-      password:
-        type: "string"
-      salt:
-        type: "string"
+      token:
+        type: string
+        description: Token值
       date_created:
-        type: "string"
+        type: string
+        format: date‐time
+        description: Token创建时间
+    xml:
+      name: Token
+  User:
+    type: object
+    properties:
+      _id:
+        type: object
+        description: 志愿者用户唯一标识（数据库默认字段）
+      username:
+        type: string
+        description: 志愿者用户账号名
+      nickname:
+        type: string
+        description: 志愿者用户昵称
+      email:
+        type: string
+        description: 志愿者用户邮箱
+      password:
+        type: string
+        description: 志愿者用户密码
+      salt:
+        type: string
+      date_created:
+        type: string
+        description: 志愿者用户账户创建时间
       token:
         $ref: '#/definitions/Token'
       reset_token:
-        type: "string"
+        type: string
       reset_token_expires_millis:
-        type: "string"
+        type: string
       firstName:
-        type: "string"
+        type: string
+        description: 志愿者用户名
       lastName:
-        type: "string"
+        type: string
+        description: 志愿者用户姓
       age:
-        type: "string"
+        type: string
+        description: 志愿者用户年龄
       gender:
-        type: "string"
-      location:
-        type: "string"
+        type: boolean
+        description: 志愿者用户性别
+      address:
+        type: string
+        description: 志愿者用户所在地
       occupation:
-        type: "string"
+        type: string
+        description: 志愿者用户职业
       speciality:
-        type: "string"
+        type: string
+        description: 志愿者用户特长
       portrait:
-        type: "string"
-        format: "binary"
+        type: string
+        format: binary
+        description: 志愿者用户头像
       telephone:
-        type: "string"
-        description: 志愿者用户电话号码。
+        type: string
+        description: 志愿者用户电话号码
       userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
+        type: integer
+        format: int32
+        description: 志愿者用户状态
+      taskList:
+        type: array
+        items:
+          type: object
+          description: 志愿者地理信息任务唯一标识
+      mapLabelList:
+        type: array
+        items:
+          type: object
+          description: 地图标注唯一标识
     xml:
-      name: "User"
-  Token:
-    type: "object"
+      name: User
+  Positions:
+    type: object
+    description: 位置（基于GeoJSON）
     properties:
-      token:
-        type: "string"
-        description: Token值。
-      date_created:
-        type: "string"
-        format: "date‐time"
-        description: Token创建时间。
+      position:
+        type: array
+        items:
+          type: number
+          format: double
+          description: 元素顺序为地理坐标经度、纬度
     xml:
-      name: "Token"
+      name: Position
+  Cordinate:
+    type: object
+    description: 地理坐标模型（基于GeoJSON）
+    properties:
+      type:
+        type: string
+        description: GeoJSON对象的类型
+        default: Point
+        enum:
+        - Point
+        - MultiPoint
+        - LineString
+        - MultiLineString
+        - Polygon
+        - MultiPolygon
+        - GeometryCollection
+        - Feature
+        - FeatureCollection
+      coordinates:
+        type: array
+        items:
+          $ref: '#/definitions/Positions'
+        description: Token创建时间
+    xml:
+      name: Cordinate
+  Task:
+    type: object
+    description: 志愿者地理信息任务模型
+    properties:
+      _id:
+        type: object
+        description: 志愿者地理信息任务唯一标识（数据库默认字段）
+      date_created:
+        type: string
+        format: date‐time
+        description: 任务创建时间
+      address:
+        type: string
+        description: 任务集合地点文字说明
+      coordinate:
+        $ref: '#/definitions/Cordinate'
+      participants:
+        type: array
+        items:
+          type: object
+          description: 志愿者用户唯一标识
+      introduction:
+        type: string
+        description: 任务的简要描述（必填）
+      details:
+        type: string
+        description: 任务的详细描述（补充说明）
+      personNumMax:
+        type: number
+        format: int32
+        description: 任务所需最大人数
+      personNumMin:
+        type: number
+        format: int32
+        description: 任务所需最小人数
+      taskStatus:
+        type: string
+        description: 任务状态
+      category:
+        type: string
+        description: 任务类别
+      keyword:
+        type: string
+        description: 任务关键词
+      messageRecord:
+        type: array
+        items:
+          type: object
+          description: 消息记录的唯一标识
+    xml:
+      name: Task
+  MapLabel:
+    type: object
+    description: 志愿者地理信息任务模型
+    properties:
+      _id:
+        type: object
+        description: 地图标注唯一标识（数据库默认字段）
+      date_created:
+        type: string
+        format: date‐time
+        description: 地图标注创建时间
+      address:
+        type: string
+        description: 地图标注中文地址说明
+      coordinate:
+        $ref: '#/definitions/Cordinate'
+      labelPerson:
+        type: object
+        description: 用户的唯一标识
+      labelMessage:
+        type: string
+        description: 地图标注的简要说明
+      labelEvaluate_Good:
+        type: number
+        format: int32
+        description: 地图标注的评价（赞）
+      labelEvaluate_Bad:
+        type: number
+        format: int32
+        description: 地图标注的评价（踩）
+    xml:
+      name: MapLabel
+  Chat:
+    type: object
+    description: 聊天信息记录模型
+    properties:
+      _id:
+        type: object
+        description: 聊天信息唯一标识（数据库默认字段）
+      chatPerson:
+        type: object
+        description: 用户的唯一标识
+      message:
+        type: string
+        description: 聊天信息内容
+      date_created:
+        type: string
+        format: date‐time
+        description: 聊天信息发送时间
+      chatTask:
+        type: object
+        description: 志愿者地理信息任务唯一标识
+      Channel:
+        type: number
+        format: int32
+        description: 聊天信息显示频道
+    xml:
+      name: Chat
+  userRegisterParam:
+    type: object
+    description: 用户注册参数
+    properties:
+      username:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
 externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"
+  description: Find out more about Swagger
+  url: http://swagger.io

@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var crypto = require('crypto');
 var jwt = require('jwt-simple');
-var passportLocalMongoose = require('passport-local-mongoose');
+var errors = require('../../include/errors.js');
 
 var TOKENSECRET = 'isie.sgg.whu.edu.cn'
 
@@ -32,26 +32,18 @@ var TokenModel = mongoose.model('Token', TokenSchema);
 var UserSchema = new Schema({
     //  用户基本信息
     username: {
-        //  用户名
         type: String,
         unique: true,
         required: 'Username is required',
         trim: true
     },
-    nickname: {
-        //  昵称
-        type: String,
-    },
     email: {
-        //  邮箱
         type: String,
         index: true,
         match: [/.+\@.+\..+/, "Please fill a valid email address"]
     },
     password: {
-        //  密码
         type: String,
-        // 设置密码规则
         validate: [
             function(password) {
                 return password && password.length > 6;
@@ -62,11 +54,9 @@ var UserSchema = new Schema({
         type: String
     },
     date_created: {
-        //  账户创建日期
         type: Date,
         default: Date.now
     },
-    //  Token令牌
     token: { type: Object },
     reset_token: { type: String },
     reset_token_expires_millis: { type: Number },
@@ -75,36 +65,27 @@ var UserSchema = new Schema({
     firstName: String,
     lastName: String,
     age: {
-        //  年龄
         type: Number 
     },    
     gender: { 
-        //  性别
         type: Boolean 
     },    
     location: {
-        //  位置
         type: String 
     },    
     occupation: {
-        //  职业
         type: String 
     },    
     speciality: {
-        //  特长
         type: String 
     },    
     portrait: {
-        //  头像
         type: Buffer
     },
     telephone: {
-        //  电话号码
         type: String 
     },
 });
-
-UserSchema.plugin(passportLocalMongoose);
 
 //  定义用户模型的虚拟属性
 UserSchema.virtual('fullName').get(function() {
@@ -134,6 +115,17 @@ UserSchema.statics.findUser = function(username, token, cb) {
             cb(false, { username: usr.username, token: usr.token, date_created: usr.date_created, fullName: usr.fullName });
         } else {
             cb(new Error('Token does not exist or does not match.'), null);
+        }
+    });
+};
+
+UserSchema.statics.findUserByUsernameOnly = function(username, cb) {
+    var self = this;
+    this.findOne({ username: username }, function(err, usr) {
+        if (err || !usr) {
+            cb(err, null);
+        } else {
+            cb(false, usr);
         }
     });
 };

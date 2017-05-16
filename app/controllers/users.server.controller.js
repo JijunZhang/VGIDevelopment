@@ -2,7 +2,7 @@ var User = require('mongoose').model('User');
 var passport = require('passport');
 var flash = require('../../include/utils').flash;
 
-// Create a new error handling controller method
+//  私有方法用于处理Mongoose错误对象并返回统一格式的错误消息
 var getErrorMessage = function(err) {
 	// Define the error message variable
 	var message = '';
@@ -38,11 +38,15 @@ var getErrorMessage = function(err) {
 */ 
 exports.register = function(req, res) {
 	var username = req.body.username;
+	var email = req.body.email;
 	var password = req.body.password;
-	var user = new User({username: username});
+	var user = new User({
+		username: username,
+		email: email
+	});
 	var message = flash(null, null);
 
-	User.register(user, password, function(error, account) {
+	User.register(user, password, function(error) {
 		if (error) {
                 if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('exists') > -1) {
                     message = flash(null, 'Sorry. That username already exists. Try again.');
@@ -70,7 +74,7 @@ exports.register = function(req, res) {
 */ 
 exports.login = function(req, res) {
 	if (req.user) {
-		User.createUserToken(req.user.username, function(err, usersToken) {
+		User.createUserToken(req.user.identity, function(err, usersToken) {
 			// console.log('token generated: ' +usersToken);
 			// console.log(err);
 			if (err) {
@@ -84,12 +88,12 @@ exports.login = function(req, res) {
 }
 
 /**
-* 本地用户登出控制方法/Login method
+* 本地用户登出控制方法/Logout method
 * 
 * @param {Object} req the request object
 * @param {Object} res the response object
 */ 
-exports.login = function(req, res) {
+exports.logout = function(req, res) {
 	if (req.user) {
 		User.createUserToken(req.user.username, function(err, usersToken) {
 			// console.log('token generated: ' +usersToken);
