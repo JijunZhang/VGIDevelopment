@@ -3,6 +3,8 @@ var crypto = require('crypto');
 var jwt = require('jwt-simple');
 var passportLocalMongoose = require('passport-local-mongoose');
 
+var config = require('./config');
+
 var TOKENSECRET = 'isie.sgg.whu.edu.cn'
 
 var Schema = mongoose.Schema;
@@ -138,6 +140,17 @@ UserSchema.statics.findUser = function(username, token, cb) {
     });
 };
 
+UserSchema.statics.findUserByUsernameOnly = function(username, cb) {
+    var self = this;
+    this.findOne({ username: username }, function(err, usr) {
+        if (err || !usr) {
+            cb(err, null);
+        } else {
+            cb(false, usr);
+        }
+    });
+};
+
 UserSchema.statics.findUserByEmailOnly = function(email, cb) {
     var self = this;
     this.findOne({ email: email }, function(err, usr) {
@@ -171,9 +184,9 @@ UserSchema.statics.createUserToken = function(username, cb) {
 };
 
 //  
-UserSchema.statics.invalidateUserToken = function(email, cb) {
+UserSchema.statics.invalidateUserToken = function(username, cb) {
     var self = this;
-    this.findOne({ email: email }, function(err, usr) {
+    this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             console.log('err');
         }
@@ -188,10 +201,10 @@ UserSchema.statics.invalidateUserToken = function(email, cb) {
     });
 };
 
-//  
-UserSchema.statics.generateResetToken = function(email, cb) {
+//  生成重置令牌的静态方法
+UserSchema.statics.generateResetToken = function(username, cb) {
     console.log("in generateResetToken....");
-    this.findUserByEmailOnly(email, function(err, user) {
+    this.findUserByUsernameOnly(username, function(err, user) {
         if (err) {
             cb(err, null);
         } else if (user) {
@@ -204,7 +217,7 @@ UserSchema.statics.generateResetToken = function(email, cb) {
             cb(false, user);
         } else {
             //TODO: This is not really robust and we should probably return an error code or something here
-            cb(new Error('No user with that email found.'), null);
+            cb(new Error('No user with that username found.'), null);
         }
     });
 };

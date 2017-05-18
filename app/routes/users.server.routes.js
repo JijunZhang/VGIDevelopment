@@ -11,6 +11,9 @@ module.exports = function(app) {
         .post(passport.authenticate('local', {session: false}), users.login);
 
     app.route('/users/logout/local')    //本地用户登出
-        .get();
+        .get(users.logout);
+
+    app.route('/users/forgot/local')    //本地用户忘记密码
+        .get(users.forgot);
 
 };

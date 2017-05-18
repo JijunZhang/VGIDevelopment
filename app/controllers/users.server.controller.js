@@ -84,22 +84,50 @@ exports.login = function(req, res) {
 }
 
 /**
-* 本地用户登出控制方法/Login method
+* 本地用户登出控制方法/Logout method
 * 
 * @param {Object} req the request object
 * @param {Object} res the response object
 */ 
-exports.login = function(req, res) {
-	if (req.user) {
-		User.createUserToken(req.user.username, function(err, usersToken) {
-			// console.log('token generated: ' +usersToken);
-			// console.log(err);
-			if (err) {
-				//  生成Token值出错
-				res.json({error: 'Issue generating token'});
-			} else {
-				res.json({token : usersToken});
-			}
-		});
+exports.logout = function(req, res) {
+	var messages = flash('Logged out', null);
+	var incomingToken = req.headers.token;
+	//console.log('LOGOUT: incomingToken: ' + incomingToken);
+	if (incomingToken) {
+		var decoded = User.decode(incomingToken);
+		if (decoded && decoded.username) {
+			//console.log("past first check...invalidating next...")
+			User.invalidateUserToken(decoded.username, function(err, user) {
+				//console.log('Err: ', err);
+				//console.log('user: ', user);
+				if (err) {
+					//console.log(err);
+					res.json({error: 'Issue finding user (in unsuccessful attempt to invalidate token).'});
+				} else {
+					///console.log("sending 200")
+					res.json({message: 'logged out'});
+				}
+			});
+		} else {
+			//console.log('Whoa! Couldn\'t even decode incoming token!');
+			res.json({error: 'Issue decoding incoming token.'});
+		}
 	}
+}
+
+/**
+* 本地用户登出控制方法/Forgot method
+* 
+* @param {Object} req the request object
+* @param {Object} res the response object
+*/ 
+exports.forgot = function(req, res) {
+	Account.generateResetToken(req.body.username, function(err, user) {
+		if (err) {
+			res.json({error: 'Issue finding user.'});
+		} else {
+			var token = user.reset_token;
+			res.json({token : token});
+		}
+	});
 }
