@@ -3,6 +3,12 @@ var passport = require('passport');
 
 module.exports = function(app) {
 
+    app.use((req, res, next) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT, PATCH, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, api_key, Authorization, token');
+        next();
+    });
     //  处理用户相关的路由请求
     app.route('/users/register')    //用户注册
         .post(users.register);
@@ -14,6 +20,12 @@ module.exports = function(app) {
         .get(users.logout);
 
     app.route('/users/forgot/local')    //本地用户忘记密码
-        .get(users.forgot);
+        .post(users.forgot);
+        
+    app.route('/users/forgotandreset/local')    //本地用户忘记并重置密码
+        .post(users.forgotAndReset);
+
+    app.route('/users/reset/password')    //本地用户重置密码
+        .post(users.resetPassword);
 
 };

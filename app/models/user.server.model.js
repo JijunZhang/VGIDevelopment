@@ -3,7 +3,7 @@ var crypto = require('crypto');
 var jwt = require('jwt-simple');
 var passportLocalMongoose = require('passport-local-mongoose');
 
-var config = require('./config');
+var config = require('../../config/config');
 
 var TOKENSECRET = 'isie.sgg.whu.edu.cn'
 
@@ -67,6 +67,10 @@ var UserSchema = new Schema({
         //  账户创建日期
         type: Date,
         default: Date.now
+    },
+    loginStatus: {
+        type: Number,
+        default: 0
     },
     //  Token令牌
     token: { type: Object },
@@ -172,6 +176,7 @@ UserSchema.statics.createUserToken = function(username, cb) {
         //创建一个令牌并且添加并保存到该文档中
         var token = self.encode({ username: username });
         usr.token = new TokenModel({ token: token });
+        usr.loginStatus = 1;
         usr.save(function(err, usr) {
             if (err) {
                 cb(err, null);
@@ -191,6 +196,26 @@ UserSchema.statics.invalidateUserToken = function(username, cb) {
             console.log('err');
         }
         usr.token = null;
+        usr.loginStatus = 0;
+        usr.save(function(err, usr) {
+            if (err) {
+                cb(err, null);
+            } else {
+                cb(false, 'removed');
+            }
+        });
+    });
+};
+
+//  
+UserSchema.statics.invalidateUserResetToken = function(username, cb) {
+    var self = this;
+    this.findOne({ username: username }, function(err, usr) {
+        if (err || !usr) {
+            console.log('err');
+        }
+        usr.token = null;
+        usr.loginStatus = 0;
         usr.save(function(err, usr) {
             if (err) {
                 cb(err, null);

@@ -53,11 +53,12 @@ exports.register = function(req, res) {
                 else {
                     message = flash(null, 'Sorry. There was an error processing your request. Please try again or contact technical support.');
                 }
-                res.send(message);
+                res.status(400).json({error: message.err});
             }
             else {
                 //  用户成功注册
-                res.send('Successfully registered user!');
+				message = flash('Successfully registered user!', null);
+                res.status(200).json({info: message.info});
             }
 	});
 };
@@ -69,17 +70,20 @@ exports.register = function(req, res) {
 * @param {Object} res the response object
 */ 
 exports.login = function(req, res) {
-	if (req.user) {
+	if (req.user && req.user.loginStatus === 0) {
 		User.createUserToken(req.user.username, function(err, usersToken) {
 			// console.log('token generated: ' +usersToken);
 			// console.log(err);
 			if (err) {
 				//  生成Token值出错
-				res.json({error: 'Issue generating token'});
+				res.status(400).json({error: 'Issue generating token'});
 			} else {
-				res.json({token : usersToken});
+				res.status(200).json({token : usersToken});
 			}
 		});
+	}
+	else {
+		res.status(400).json({error: 'The user is logged in.'});
 	}
 }
 
@@ -102,32 +106,151 @@ exports.logout = function(req, res) {
 				//console.log('user: ', user);
 				if (err) {
 					//console.log(err);
-					res.json({error: 'Issue finding user (in unsuccessful attempt to invalidate token).'});
+					res.status(400).json({error: 'Issue finding user (in unsuccessful attempt to invalidate token).'});
 				} else {
 					///console.log("sending 200")
-					res.json({message: 'logged out'});
+					res.status(200).json({info: 'logged out'});
 				}
 			});
 		} else {
 			//console.log('Whoa! Couldn\'t even decode incoming token!');
-			res.json({error: 'Issue decoding incoming token.'});
+			res.status(400).json({error: 'Issue decoding incoming token.'});
 		}
 	}
 }
 
 /**
-* 本地用户登出控制方法/Forgot method
+* 本地用户忘记密码控制方法/Forgot method
 * 
 * @param {Object} req the request object
 * @param {Object} res the response object
 */ 
 exports.forgot = function(req, res) {
-	Account.generateResetToken(req.body.username, function(err, user) {
+	User.generateResetToken(req.body.username, function(err, user) {
 		if (err) {
-			res.json({error: 'Issue finding user.'});
+			res.status(400).json({error: 'Issue finding user.'});
 		} else {
 			var token = user.reset_token;
-			res.json({token : token});
+			res.status(200).json({token : token});
 		}
 	});
+}
+
+/**
+* 本地用户忘记密码后重置控制方法/ForgotAndReset method
+* 
+* @param {Object} req the request object
+* @param {Object} res the response object
+*/ 
+exports.forgotAndReset = function(req, res) {
+	var incomingToken = req.headers.token;
+	var newPassword = req.body.new_password;
+	var confirmationPassword = req.body.confirm_new_password;
+	console.log('Forgot and reset password: incomingToken: ' + incomingToken);
+	console.log("newPassword: ", newPassword);
+	console.log("confirmationPassword: ", confirmationPassword);
+	if (incomingToken) {
+		var decoded = User.decode(incomingToken);
+		if (decoded && decoded.username) {
+			var username = decoded.username;
+			if (newPassword && confirmationPassword && (newPassword === confirmationPassword)) {
+				User.findUserByUsernameOnly(username, function(err, user) {
+					console.log(err);
+					if (user.reset_token === incomingToken) {
+						if ( now.getTime() < user.reset_link_expires_millis ) {
+							user.setPassword(newPassword, function(err, user) {
+								if (err) {
+									console.log("error: ", err);
+									res.status(400).json({err: 'Issue while setting new password.'});
+								}
+								user.token = null;
+								user.loginStatus = 0;
+								user.save(function(err, usr) {
+									if (err) {
+										cb(err, null);
+									} else {
+										//  客户端需要重新登陆以重新获取令牌
+										res.status(200).json({info: 'Password updated.'});
+									}
+								});
+							});								
+						}
+						else {
+							res.status(400).json({error: 'Reset token expired.'});
+						}
+					}
+					else {
+						res.status(400).json({error: 'Unexpected reset token.'});
+					}
+				});
+			}
+			else {
+				res.status(400).json({error: 'Missing new, or confirmation password, OR, the confirmation does not match.'});
+			}
+		} else {
+			//console.log('Whoa! Couldn\'t even decode incoming token!');
+			res.status(400).json({error: 'Issue decoding incoming token.'});
+		}
+	}
+}
+
+/**
+* 本地用户重置密码控制方法/Forgot method
+* 
+* @param {Object} req the request object
+* @param {Object} res the response object
+*/ 
+exports.resetPassword = function(req, res) {
+	console.log("GOT IN")
+	var username = req.body.username;
+	var currentPassword = req.body.current_password;
+	var newPassword = req.body.new_password;
+	var confirmationPassword = req.body.confirm_new_password;
+	// console.log("username: ", username);
+	// console.log("currentPassword: ", currentPassword);
+	// console.log("newPassword: ", newPassword);
+	// console.log("confirmationPassword: ", confirmationPassword);
+
+	if (username && currentPassword && newPassword && confirmationPassword && (newPassword === confirmationPassword)) {
+
+		User.findUserByUsernameOnly(username, function(err, user) {
+			if (err) {
+				console.log("error: ", err);
+				res.status(400).json({err: 'Issue while finding user.'});
+			} else if (!user) {
+				console.log("Unknown user");
+				res.status(400).json({err: 'Unknown username: ' + username});
+			} else if (user) {
+				console.log("FOUND USER .. now going call User.authenticate...");
+				User.authenticate()(username, currentPassword, function (err, isMatch, options) {
+					if (err) {
+						console.log("error: ", err);
+						res.status(400).json({err: 'Error while verifying current password.'});
+					} else if (!isMatch) {
+						res.status(400).json({err: 'Current password does not match'});
+					} else {
+						user.setPassword(newPassword, function(err, user) {
+							if (err) {
+								console.log("error: ", err);
+								res.status(400).json({err: 'Issue while setting new password.'});
+							}
+							user.token = null;
+       						user.loginStatus = 0;
+							user.save(function(err, usr) {
+								if (err) {
+									cb(err, null);
+								} else {
+									//  客户端需要重新登陆以重新获取令牌
+									res.status(200).json({info: 'Password updated.'});
+								}
+							});
+						});
+					}
+				});
+			}
+		});
+	} else {
+		//TODO Better error message,etc.
+		res.json({error: 'Missing username, current, new, or confirmation password, OR, the confirmation does not match.'});
+	}
 }
