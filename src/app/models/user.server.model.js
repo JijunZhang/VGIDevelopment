@@ -75,7 +75,7 @@ var UserSchema = new Schema({
     //  Token令牌
     token: { type: Object },
     reset_token: { type: String },
-    reset_token_expires_millis: { type: Number },
+    reset_token_expires_millis: { type: Date },
 
     //  用户核心信息
     firstName: String,
@@ -158,6 +158,17 @@ UserSchema.statics.findUserByUsernameOnly = function(username, cb) {
 UserSchema.statics.findUserByEmailOnly = function(email, cb) {
     var self = this;
     this.findOne({ email: email }, function(err, usr) {
+        if (err || !usr) {
+            cb(err, null);
+        } else {
+            cb(false, usr);
+        }
+    });
+};
+
+UserSchema.statics.findUserByResetTokenOnly = function(reset_token, cb) {
+    var self = this;
+    this.findOne({ reset_token: reset_token }, function(err, usr) {
         if (err || !usr) {
             cb(err, null);
         } else {

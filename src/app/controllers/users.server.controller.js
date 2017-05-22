@@ -146,51 +146,39 @@ exports.forgotAndReset = function(req, res) {
 	var incomingToken = req.headers.token;
 	var newPassword = req.body.new_password;
 	var confirmationPassword = req.body.confirm_new_password;
-	console.log('Forgot and reset password: incomingToken: ' + incomingToken);
-	console.log("newPassword: ", newPassword);
-	console.log("confirmationPassword: ", confirmationPassword);
+	// console.log('Forgot and reset password: incomingToken: ' + incomingToken);
+	// console.log("newPassword: ", newPassword);
+	// console.log("confirmationPassword: ", confirmationPassword);
 	if (incomingToken) {
-		var decoded = User.decode(incomingToken);
-		if (decoded && decoded.username) {
-			var username = decoded.username;
-			if (newPassword && confirmationPassword && (newPassword === confirmationPassword)) {
-				User.findUserByUsernameOnly(username, function(err, user) {
-					console.log(err);
-					if (user.reset_token === incomingToken) {
-						if ( now.getTime() < user.reset_link_expires_millis ) {
-							user.setPassword(newPassword, function(err, user) {
-								if (err) {
-									console.log("error: ", err);
-									res.status(400).json({err: 'Issue while setting new password.'});
-								}
-								user.token = null;
-								user.loginStatus = 0;
-								user.save(function(err, usr) {
-									if (err) {
-										cb(err, null);
-									} else {
-										//  客户端需要重新登陆以重新获取令牌
-										res.status(200).json({info: 'Password updated.'});
-									}
-								});
-							});								
-						}
-						else {
-							res.status(400).json({error: 'Reset token expired.'});
-						}
+		User.findUserByResetTokenOnly(incomingToken, function(err, user) {
+			// console.log(err);
+			var currentTime = Date.now();
+			var expiredTime = user.reset_link_expires_millis;
+			console.log(currentTime);
+			console.log(user);
+			console.log(expiredTime);
+			if ( currentTime < expiredTime ) {
+				user.setPassword(newPassword, function(err, user) {
+					if (err) {
+						console.log("error: ", err);
+						res.status(400).json({err: 'Issue while setting new password.'});
 					}
-					else {
-						res.status(400).json({error: 'Unexpected reset token.'});
-					}
-				});
+					user.token = null;
+					user.loginStatus = 0;
+					user.save(function(err, usr) {
+						if (err) {
+							cb(err, null);
+						} else {
+							//  客户端需要重新登陆以重新获取令牌
+							res.status(200).json({info: 'Password reset.'});
+						}
+					});
+				});								
 			}
 			else {
-				res.status(400).json({error: 'Missing new, or confirmation password, OR, the confirmation does not match.'});
+				res.status(400).json({error: 'Reset token expired.'});
 			}
-		} else {
-			//console.log('Whoa! Couldn\'t even decode incoming token!');
-			res.status(400).json({error: 'Issue decoding incoming token.'});
-		}
+		});
 	}
 }
 
