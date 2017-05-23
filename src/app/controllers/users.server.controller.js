@@ -1,6 +1,6 @@
 var User = require('mongoose').model('User');
 var passport = require('passport');
-var flash = require('../../include/utils').flash;
+var flash = require('../../utils/utils').flash;
 
 // Create a new error handling controller method
 var getErrorMessage = function(err) {
