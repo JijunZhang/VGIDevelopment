@@ -26,7 +26,7 @@ module.exports = function() {
     require('../app/routes/users.server.routes.js')(app);
 
     // Set Static Folder
-    app.use(express.static('./public'));
+    app.use(express.static('../public'));
 
     return app;
 }
