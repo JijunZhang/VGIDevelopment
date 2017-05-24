@@ -1,11 +1,11 @@
 var config = require('./config'),
     express = require('express'),
     morgon = require('morgan'),
-    compress = require('compress'),
+    compress = require('compression'),
     bodyParser = require('body-parser'),
     methodOverride = require('method-override'),
     passport = require('passport');
-    
+
 module.exports = function() {
     var app = express();
 
@@ -20,7 +20,7 @@ module.exports = function() {
     }))
     app.use(bodyParser.json());
     app.use(methodOverride());
-    
+
     app.use(passport.initialize());
 
     require('../app/routes/users.server.routes.js')(app);
