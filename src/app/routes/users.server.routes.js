@@ -16,8 +16,10 @@ module.exports = function(app) {
     app.route('/users/login/local') //本地用户登录
         .post(passport.authenticate('local', { session: false }), users.login);
 
+    //本地用户登出
+    //首先使用token令牌取出用户信息
     app.route('/users/logout/local') //本地用户登出
-        .get(users.logout);
+        .get(users.jwtAuth, users.requireAuth, users.logout);
 
     app.route('/users/forgot/local') //本地用户忘记密码
         .post(users.forgot);
