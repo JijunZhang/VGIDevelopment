@@ -14,18 +14,12 @@ var TokenSchema = new Schema({
     token: {
         type: String
     },
-    date_created: { 
-        type: Date, 
-        default: Date.now 
+    date_created: {
+        type: Date,
+        default: Date.now
     }
 });
 
-//  设置Token静态方法过期时间
-TokenSchema.statics.hasExpired = function(created) {
-    var now = new Date();
-    var diff = (now.getTime() - created);
-    return diff > config.ttl;
-};
 
 //  注册Token数据模型
 var TokenModel = mongoose.model('Token', TokenSchema);
@@ -82,31 +76,31 @@ var UserSchema = new Schema({
     lastName: String,
     age: {
         //  年龄
-        type: Number 
-    },    
-    gender: { 
+        type: Number
+    },
+    gender: {
         //  性别
-        type: Boolean 
-    },    
+        type: Boolean
+    },
     location: {
         //  位置
-        type: String 
-    },    
+        type: String
+    },
     occupation: {
         //  职业
-        type: String 
-    },    
+        type: String
+    },
     speciality: {
         //  特长
-        type: String 
-    },    
+        type: String
+    },
     portrait: {
         //  头像
         type: Buffer
     },
     telephone: {
         //  电话号码
-        type: String 
+        type: String
     },
 });
 
@@ -128,6 +122,11 @@ UserSchema.statics.encode = function(data) {
 };
 UserSchema.statics.decode = function(data) {
     return jwt.decode(data, TOKENSECRET);
+};
+UserSchema.statics.hasExpired = function(created) {
+    var now = new Date();
+    var diff = (now.getTime() - created);
+    return diff > config.ttl;
 };
 
 // 查找用户
