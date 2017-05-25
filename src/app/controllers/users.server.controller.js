@@ -196,6 +196,7 @@ exports.resetPassword = function(req, res) {
     // console.log("newPassword: ", newPassword);
     // console.log("confirmationPassword: ", confirmationPassword);
 
+    //利用req.user中的信息来判断输入用户名和原始密码的正确性
     if (username && currentPassword && newPassword && confirmationPassword && (newPassword === confirmationPassword)) {
 
         User.findUserByUsernameOnly(username, function(err, user) {
@@ -239,3 +240,54 @@ exports.resetPassword = function(req, res) {
         res.json({ error: 'Missing username, current, new, or confirmation password, OR, the confirmation does not match.' });
     }
 }
+
+//验证token的中间件
+//步骤：检查附上的token，试图解密，验证token的可用性
+//如果token是合法的，检索里面用户的信息，以及附加到请求的对象上
+exports.jwtAuth = function(req, res, next) {
+    //为了获得最大的可扩展性
+    //使用一下3个方法附加我们的token：
+    //作为请求链接（query)的参数，作为主体的参数（body），
+    //和作为请求头（Header）的参数
+    var incomingToken = (req.body && req.body.access_token) || req.query.access_token ||
+        req.headers['x-access_token'];
+
+
+    if (incomingToken) {
+        //解析token值
+        var decoded = User.decode(incomingToken);
+
+        if (decoded && decoded.username) {
+            //根据解析后的decoded获取用户信息
+            User.findUser(decoded.username, incomingToken, function(err, user) {
+                if (!err) {
+                    //判断token值是否过期
+                    if (User.hasExpired(user.token.date_created)) {
+                        res.status(400).send('Access token has expires');
+                    } else {
+                        //取出用户信息
+                        req.user = user;
+                        //用于验证用户是否取出
+                        //console.log(user);
+                        return next();
+                    }
+                }
+            });
+        } else {
+            //可写一些输出的错误信息
+            return next();
+        }
+    } else {
+        //可写一些输出的错误信息
+        return next();
+    }
+};
+
+//中间件，用于检验token之后，检查req.user是否为已认证用户
+exports.requireAuth = function(req, res, next) {
+    if (!req.user) {
+        res.status(401).send('Not authorized');
+    } else {
+        next();
+    }
+};
