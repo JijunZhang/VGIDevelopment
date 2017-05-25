@@ -9,21 +9,6 @@ var TOKENSECRET = 'isie.sgg.whu.edu.cn'
 
 var Schema = mongoose.Schema;
 
-//  定义Token数据模式
-var TokenSchema = new Schema({
-    token: {
-        type: String
-    },
-    date_created: {
-        type: Date,
-        default: Date.now
-    }
-});
-
-
-//  注册Token数据模型
-var TokenModel = mongoose.model('Token', TokenSchema);
-
 //  定义User数据模式
 var UserSchema = new Schema({
     //  用户基本信息
@@ -67,7 +52,7 @@ var UserSchema = new Schema({
         default: 0
     },
     //  Token令牌
-    token: { type: Object },
+    token: { type: String },
     reset_token: { type: String },
     reset_token_expires_millis: { type: Date },
 
@@ -107,6 +92,7 @@ var UserSchema = new Schema({
 UserSchema.plugin(passportLocalMongoose);
 
 //  定义用户模型的虚拟属性
+//此法暂时无用
 UserSchema.virtual('fullName').get(function() {
     return this.firstName + " " + this.lastName;
 }).set(function(fullName) {
@@ -135,8 +121,8 @@ UserSchema.statics.findUser = function(username, token, cb) {
     this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             cb(err, null);
-        } else if (usr.token && usr.token.token && token === usr.token.token) {
-            cb(false, { username: usr.username, token: usr.token, date_created: usr.date_created, fullName: usr.fullName });
+        } else if (usr.token && (token === usr.token)) {
+            cb(false, usr);
         } else {
             cb(new Error('Token does not exist or does not match.'), null);
         }
@@ -176,23 +162,28 @@ UserSchema.statics.findUserByResetTokenOnly = function(reset_token, cb) {
     });
 };
 
-//  创建用户令牌静态方法
+
+//  利用用户信息与生成时间创建用户令牌静态方法
 UserSchema.statics.createUserToken = function(username, cb) {
     var self = this;
     this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             console.log('err');
         }
-        //创建一个令牌并且添加并保存到该文档中
-        var token = self.encode({ username: username });
-        usr.token = new TokenModel({ token: token });
+        //利用用户名和生成时间创建一个令牌并且添加并保存到该文档中
+        var token = self.encode({
+            username: username,
+            date_created: Date.now()
+        });
+        //usr.token = new TokenModel({ token: token });
+        usr.token = token;
         usr.loginStatus = 1;
         usr.save(function(err, usr) {
             if (err) {
                 cb(err, null);
             } else {
-                console.log("about to cb with usr.token.token: " + usr.token.token);
-                cb(false, usr.token.token); //token object, in turn, has a token property :)
+                console.log("about to cb with usr.token: " + usr.token);
+                cb(false, usr.token); //token object, in turn, has a token property :)
             }
         });
     });
@@ -217,7 +208,8 @@ UserSchema.statics.invalidateUserToken = function(username, cb) {
     });
 };
 
-//  
+//此法暂时无用，想法是用于销毁生成的reset_Token，
+//此字段用于保存忘记密码时生成的信息
 UserSchema.statics.invalidateUserResetToken = function(username, cb) {
     var self = this;
     this.findOne({ username: username }, function(err, usr) {

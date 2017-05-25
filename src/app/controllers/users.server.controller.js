@@ -41,7 +41,7 @@ exports.register = function(req, res) {
     var password = req.body.password;
     var user = new User({ username: username });
     var message = flash(null, null);
-    console.log(user);
+    //console.log(user);
 
     User.register(user, password, function(error, account) {
         if (error) {
@@ -92,29 +92,16 @@ exports.login = function(req, res) {
  */
 exports.logout = function(req, res) {
     var messages = flash('Logged out', null);
-    var incomingToken = req.headers.token;
-    //console.log('LOGOUT: incomingToken: ' + incomingToken);
-    if (incomingToken) {
-        var decoded = User.decode(incomingToken);
-        if (decoded && decoded.username) {
-            //console.log("past first check...invalidating next...")
-            User.invalidateUserToken(decoded.username, function(err, user) {
-                //console.log('Err: ', err);
-                //console.log('user: ', user);
-                if (err) {
-                    //console.log(err);
-                    res.status(400).json({ error: 'Issue finding user (in unsuccessful attempt to invalidate token).' });
-                } else {
-                    ///console.log("sending 200")
-                    res.status(200).json({ info: 'logged out' });
-                }
-            });
+    User.invalidateUserToken(req.user.username, function(err, user) {
+        console.log('user: ', user);
+        if (err) {
+            console.log(err);
+            res.json({ error: 'Issue finding user (in unsuccessful attempt to invalidate token).' });
         } else {
-            //console.log('Whoa! Couldn\'t even decode incoming token!');
-            res.status(400).json({ error: 'Issue decoding incoming token.' });
+            res.json({ message: 'logged out' });
         }
-    }
-}
+    });
+};
 
 /**
  * 本地用户忘记密码控制方法/Forgot method
@@ -256,21 +243,22 @@ exports.jwtAuth = function(req, res, next) {
     if (incomingToken) {
         //解析token值
         var decoded = User.decode(incomingToken);
-
-        if (decoded && decoded.username) {
+        // console.log(decoded);
+        // console.log(decoded.username);
+        // console.log(decoded.date_created);
+        if (decoded && decoded.username && decoded.date_created) {
             //根据解析后的decoded获取用户信息
+            if (User.hasExpired(decoded.date_created)) {
+                res.status(400).send('Access token has expires');
+            }
+
             User.findUser(decoded.username, incomingToken, function(err, user) {
                 if (!err) {
-                    //判断token值是否过期
-                    if (User.hasExpired(user.token.date_created)) {
-                        res.status(400).send('Access token has expires');
-                    } else {
-                        //取出用户信息
-                        req.user = user;
-                        //用于验证用户是否取出
-                        //console.log(user);
-                        return next();
-                    }
+                    //取出用户信息
+                    req.user = user;
+                    //用于验证用户是否取出
+                    //console.log(user);
+                    return next();
                 }
             });
         } else {
