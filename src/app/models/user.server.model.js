@@ -3,6 +3,8 @@ var crypto = require('crypto');
 var jwt = require('jwt-simple');
 var errors = require('../../include/errors.js');
 
+var config = require('../../config/config');
+
 var TOKENSECRET = 'isie.sgg.whu.edu.cn'
 
 var Schema = mongoose.Schema;
@@ -57,9 +59,14 @@ var UserSchema = new Schema({
         type: Date,
         default: Date.now
     },
+    loginStatus: {
+        type: Number,
+        default: 0
+    },
+    //  Token令牌
     token: { type: Object },
     reset_token: { type: String },
-    reset_token_expires_millis: { type: Number },
+    reset_token_expires_millis: { type: Date },
 
     //  用户核心信息
     firstName: String,
@@ -141,6 +148,17 @@ UserSchema.statics.findUserByEmailOnly = function(email, cb) {
     });
 };
 
+UserSchema.statics.findUserByResetTokenOnly = function(reset_token, cb) {
+    var self = this;
+    this.findOne({ reset_token: reset_token }, function(err, usr) {
+        if (err || !usr) {
+            cb(err, null);
+        } else {
+            cb(false, usr);
+        }
+    });
+};
+
 //  创建用户令牌静态方法
 UserSchema.statics.createUserToken = function(username, cb) {
     var self = this;
@@ -151,6 +169,7 @@ UserSchema.statics.createUserToken = function(username, cb) {
         //创建一个令牌并且添加并保存到该文档中
         var token = self.encode({ username: username });
         usr.token = new TokenModel({ token: token });
+        usr.loginStatus = 1;
         usr.save(function(err, usr) {
             if (err) {
                 cb(err, null);
@@ -163,13 +182,14 @@ UserSchema.statics.createUserToken = function(username, cb) {
 };
 
 //  
-UserSchema.statics.invalidateUserToken = function(email, cb) {
+UserSchema.statics.invalidateUserToken = function(username, cb) {
     var self = this;
-    this.findOne({ email: email }, function(err, usr) {
+    this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             console.log('err');
         }
         usr.token = null;
+        usr.loginStatus = 0;
         usr.save(function(err, usr) {
             if (err) {
                 cb(err, null);
@@ -181,9 +201,28 @@ UserSchema.statics.invalidateUserToken = function(email, cb) {
 };
 
 //  
-UserSchema.statics.generateResetToken = function(email, cb) {
+UserSchema.statics.invalidateUserResetToken = function(username, cb) {
+    var self = this;
+    this.findOne({ username: username }, function(err, usr) {
+        if (err || !usr) {
+            console.log('err');
+        }
+        usr.token = null;
+        usr.loginStatus = 0;
+        usr.save(function(err, usr) {
+            if (err) {
+                cb(err, null);
+            } else {
+                cb(false, 'removed');
+            }
+        });
+    });
+};
+
+//  生成重置令牌的静态方法
+UserSchema.statics.generateResetToken = function(username, cb) {
     console.log("in generateResetToken....");
-    this.findUserByEmailOnly(email, function(err, user) {
+    this.findUserByUsernameOnly(username, function(err, user) {
         if (err) {
             cb(err, null);
         } else if (user) {
@@ -196,7 +235,7 @@ UserSchema.statics.generateResetToken = function(email, cb) {
             cb(false, user);
         } else {
             //TODO: This is not really robust and we should probably return an error code or something here
-            cb(new Error('No user with that email found.'), null);
+            cb(new Error('No user with that username found.'), null);
         }
     });
 };
