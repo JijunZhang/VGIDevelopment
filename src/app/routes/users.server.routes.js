@@ -10,22 +10,24 @@ module.exports = function(app) {
         next();
     });
     //  处理用户相关的路由请求
-    app.route('/users/register')    //用户注册
+    app.route('/users/register') //用户注册
         .post(users.register);
-    
-    app.route('/users/login/local')    //本地用户登录
-        .post(passport.authenticate('local', {session: false}), users.login);
 
-    app.route('/users/logout/local')    //本地用户登出
-        .get(users.logout);
+    app.route('/users/login/local') //本地用户登录
+        .post(passport.authenticate('local', { session: false }), users.login);
 
-    app.route('/users/forgot/local')    //本地用户忘记密码
+    //本地用户登出
+    //首先使用token令牌取出用户信息
+    app.route('/users/logout/local') //本地用户登出
+        .get(users.jwtAuth, users.requireAuth, users.logout);
+
+    app.route('/users/forgot/local') //本地用户忘记密码
         .post(users.forgot);
-        
-    app.route('/users/forgotandreset/local')    //本地用户忘记并重置密码
+
+    app.route('/users/forgotandreset/local') //本地用户忘记并重置密码
         .post(users.forgotAndReset);
 
-    app.route('/users/reset/password')    //本地用户重置密码
-        .post(users.resetPassword);
+    app.route('/users/reset/password') //本地用户重置密码
+        .post(users.jwtAuth, users.requireAuth, users.resetPassword);
 
 };
