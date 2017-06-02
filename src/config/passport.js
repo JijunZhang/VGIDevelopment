@@ -1,6 +1,6 @@
 var passport = require('passport'),
-    mongoose = require('mongoose');
+  mongoose = require('mongoose')
 
-module.exports = function() {
-    require('./strategies/local.js')();
-};
+module.exports = function () {
+  require('./strategies/local.js')()
+}
