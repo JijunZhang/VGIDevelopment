@@ -1,4 +1,4 @@
-var User = require('mongoose').model('User')
+var User = require('../models/user.server.model')
 var passport = require('passport')
 var flash = require('../../utils/utils').flash
 
@@ -39,17 +39,20 @@ var getErrorMessage = function (err) {
 exports.register = function (req, res) {
   var username = req.body.username
   var password = req.body.password
+  // console.log(username)
+  // console.log(password)
   var user = new User({ username: username })
   var message = flash(null, null)
-    // console.log(user);
+  // console.log(user)
 
   User.register(user, password, function (error, account) {
     if (error) {
+      // console.log(error)
       if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('exists') > -1) {
         message = flash(null, 'Sorry. That username already exists. Try again.')
       } else if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('argument not set')) {
         message = flash(null, 'It looks like you\'re missing a required argument. Try again.')
-      } else {
+      } else {        
         message = flash(null, 'Sorry. There was an error processing your request. Please try again or contact technical support.')
       }
       res.status(400).json({ error: message.err })

@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const users = require('../controllers/users.server.controller')
+const users = require('../../controllers/users.server.controller')
 const passport = require('passport')
 
 router.use((req, res, next) => {

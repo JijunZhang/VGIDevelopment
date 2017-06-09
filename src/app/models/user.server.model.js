@@ -280,4 +280,4 @@ UserSchema.set('toJSON', {
 })
 
 //  注册User数据模型
-mongoose.model('User', UserSchema)
+module.exports = mongoose.model('User', UserSchema)

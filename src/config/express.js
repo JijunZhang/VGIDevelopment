@@ -5,7 +5,7 @@ const bodyParser = require('body-parser')
 const methodOverride = require('method-override')
 const passport = require('passport')
 
-const api = require('../app/api')
+const api = require('../app/api/index.server.api')
 
 module.exports = function () {
   var app = express()
