@@ -1,10 +1,11 @@
-var config = require('./config'),
-  express = require('express'),
-  morgon = require('morgan'),
-  compress = require('compression'),
-  bodyParser = require('body-parser'),
-  methodOverride = require('method-override'),
-  passport = require('passport')
+const express = require('express')
+const morgon = require('morgan')
+const compress = require('compression')
+const bodyParser = require('body-parser')
+const methodOverride = require('method-override')
+const passport = require('passport')
+
+const api = require('../app/api')
 
 module.exports = function () {
   var app = express()
@@ -23,6 +24,7 @@ module.exports = function () {
 
   app.use(passport.initialize())
 
+  app.use('/api', api)
   require('../app/routes/users.server.routes.js')(app)
 
     // Set Static Folder
