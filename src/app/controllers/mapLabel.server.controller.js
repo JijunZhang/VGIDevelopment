@@ -1,5 +1,4 @@
-var mongoose = require('mongoose')
-var Maplabel = mongoose.model('MapLabel')
+var MapLabel = require('../models/maplabel.server.model')
 
 
 //处理mongoose错误
@@ -19,7 +18,7 @@ var getErrorMessage = function(err) {
 exports.mapLabelCreate = function(req, res) {
     //前台提供body中的数据，
     //包括中文地址address，geojson坐标，标注信息
-    var mapLabel = new Maplabel(req.body)
+    var mapLabel = new MapLabel(req.body)
         //将经过passport身份验证的当前用户设置为此地图标记的创建者
     mapLabel.labelPerson = req.user
         //保存新创建的地图标记
@@ -47,7 +46,7 @@ exports.mapLabelCreate = function(req, res) {
 
 //使用populate返回地图标记列表
 exports.mapLabelList = function(req, res) {
-    MapLabel.find().sort('-date_created').populate('labelPerson', 'username').
+    MapLabel.find().sort('-date_created').populate({ path: 'labelPerson', select: '-_id' }).
     exec(function(err, mapLabels) {
         if (err) {
             return res.json({
@@ -57,7 +56,7 @@ exports.mapLabelList = function(req, res) {
                 }
             })
         } else {
-            console.log('地图标记：' + mapLabels[0])
+            //console.log('地图标记：' + mapLabels[0].labelPerson.username)
             res.json({
                 status: {
                     code: 200,

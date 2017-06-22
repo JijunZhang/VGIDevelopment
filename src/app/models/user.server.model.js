@@ -98,13 +98,13 @@ UserSchema.plugin(passportLocalMongoose)
 
 //  定义用户模型的虚拟属性
 // 此法暂时无用
-UserSchema.virtual('fullName').get(function() {
-    return this.firstName + ' ' + this.lastName
-}).set(function(fullName) {
-    var splitName = fullName.split(' ')
-    this.firstName = splitName[0] || ''
-    this.lastName = splitName[1] || ''
-})
+// UserSchema.virtual('fullName').get(function() {
+//     return this.firstName + ' ' + this.lastName
+// }).set(function(fullName) {
+//     var splitName = fullName.split(' ')
+//     this.firstName = splitName[0] || ''
+//     this.lastName = splitName[1] || ''
+// })
 
 //  定义用户模型的静态方法
 //  用户Token值的编解码操作

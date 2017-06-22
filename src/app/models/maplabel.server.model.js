@@ -37,4 +37,4 @@ var MapLabelSchema = new Schema({
 })
 
 
-mongoose.model('MapLabel', MapLabelSchema)
+module.exports = mongoose.model('MapLabel', MapLabelSchema)
