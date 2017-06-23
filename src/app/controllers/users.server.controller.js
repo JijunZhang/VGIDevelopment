@@ -267,11 +267,21 @@ exports.jwtAuth = function(req, res, next) {
             })
         } else {
             // 可写一些输出的错误信息
-            return next()
+            return res.json({
+                status: {
+                    code: 400,
+                    message: 'token值解析出错'
+                }
+            })
         }
     } else {
         // 可写一些输出的错误信息
-        return next()
+        return res.json({
+            status: {
+                code: 400,
+                message: '没有传入token值'
+            }
+        })
     }
 }
 
