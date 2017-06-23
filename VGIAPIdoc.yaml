@@ -12,8 +12,9 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.0
 host: localhost:3000
+#basePath: /v1
 tags:
-- name: users
+- name: user
   description: 关于用户对象的一些操作
   externalDocs:
     description: Find out more about our store
@@ -28,16 +29,9 @@ paths:
       summary: 处理用户注册业务
       description: 客户端传递用户名、邮箱和密码来实现用户注册
       operationId: registerUser
-      consumes:
-        - application/json
-      produces:
-        - application/xml
-        - application/json
+      produces: 
+      - application/json
       parameters:
-        - name: Content-Type
-          in: header
-          required: true
-          type: string
         - name: userRegisterParam
           in: body
           description: 用户注册参数
@@ -94,6 +88,11 @@ paths:
           description: 用户登出成功
         400:
           description: 用户登出失败
+securityDefinitions:
+  AccessToken:
+    type: apiKey
+    name: token
+    in: header
 definitions:
   Token:
     type: object
@@ -332,6 +331,8 @@ definitions:
     description: 用户注册参数
     properties:
       username:
+        type: string
+      email:
         type: string
       password:
         type: string
