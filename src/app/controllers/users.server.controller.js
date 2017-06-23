@@ -94,7 +94,6 @@ exports.login = function (req, res) {
  * @param {Object} res the response object
  */
 exports.logout = function (req, res) {
-  var messages = flash('Logged out', null)
   User.invalidateUserToken(req.user.username, function (err, user) {
     console.log('user: ', user)
     if (err) {
@@ -234,19 +233,21 @@ exports.resetPassword = function (req, res) {
 // 步骤：检查附上的token，试图解密，验证token的可用性
 // 如果token是合法的，检索里面用户的信息，以及附加到请求的对象上
 exports.jwtAuth = function (req, res, next) {
-    // 为了获得最大的可扩展性
-    // 使用一下3个方法附加我们的token：
-    // 作为请求链接（query)的参数，作为主体的参数（body），
-    // 和作为请求头（Header）的参数
+  // 为了获得最大的可扩展性
+  // 使用一下3个方法附加我们的token：
+  // 作为请求链接（query)的参数，作为主体的参数（body），
+  // 和作为请求头（Header）的参数
+  console.log('Jwt Authentication ...')
   var incomingToken = (req.body && req.body.access_token) || req.query.access_token ||
         req.headers['x-access_token']
-
+  console.log(incomingToken)
   if (incomingToken) {
-        // 解析token值
+    // 解析token值
+    console.log(incomingToken)    
     var decoded = User.decode(incomingToken)
-        // console.log(decoded);
-        // console.log(decoded.username);
-        // console.log(decoded.date_created);
+    console.log(decoded)
+    console.log(decoded.username)
+    console.log(decoded.date_created)
     if (decoded && decoded.username && decoded.date_created) {
             // 根据解析后的decoded获取用户信息
       if (User.hasExpired(decoded.date_created)) {
@@ -257,23 +258,24 @@ exports.jwtAuth = function (req, res, next) {
         if (!err) {
                     // 取出用户信息
           req.user = user
-                    // 用于验证用户是否取出
-                    // console.log(user);
+          // 用于验证用户是否取出
+          console.log(user)
           return next()
         }
       })
     } else {
             // 可写一些输出的错误信息
-      return next()
+      // return next()
     }
   } else {
         // 可写一些输出的错误信息
-    return next()
+    // return next()
   }
 }
 
 // 中间件，用于检验token之后，检查req.user是否为已认证用户
 exports.requireAuth = function (req, res, next) {
+  console.log('User Authorizing ...')
   if (!req.user) {
     res.status(401).send('Not authorized')
   } else {

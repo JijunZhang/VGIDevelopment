@@ -18,7 +18,7 @@ router.route('/login/local') // 本地用户登录
   // 本地用户登出
   // 首先使用token令牌取出用户信息
 router.route('/logout/local') // 本地用户登出
-      .get(users.jwtAuth, users.requireAuth, users.logout)
+      .post(users.jwtAuth, users.requireAuth, users.logout)
 
 router.route('/forgot/local') // 本地用户忘记密码
       .post(users.forgot)

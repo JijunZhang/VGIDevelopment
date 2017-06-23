@@ -117,7 +117,6 @@ UserSchema.statics.hasExpired = function (created) {
 
 // 查找用户
 UserSchema.statics.findUser = function (username, token, cb) {
-  var self = this
   this.findOne({ username: username }, function (err, usr) {
     if (err || !usr) {
       cb(err, null)
@@ -190,7 +189,6 @@ UserSchema.statics.createUserToken = function (username, cb) {
 
 //
 UserSchema.statics.invalidateUserToken = function (username, cb) {
-  var self = this
   this.findOne({ username: username }, function (err, usr) {
     if (err || !usr) {
       console.log('err')
@@ -201,6 +199,7 @@ UserSchema.statics.invalidateUserToken = function (username, cb) {
       if (err) {
         cb(err, null)
       } else {
+        console.log(usr)
         cb(false, 'removed')
       }
     })
