@@ -13,7 +13,7 @@ module.exports = {
     // Development configuration options
   db: 'mongodb://dbdevterster:dbdevterster$0609@localhost/mean-book',
   sessionSecret: 'developmentSessionSecret',
-  'ttl': 3600000, // 1 hour
+  'ttl': 86400000, // 1 hour
   'resetTokenExpiresMinutes': 20 // 20 minutes later
 
 }

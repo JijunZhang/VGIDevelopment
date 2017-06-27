@@ -15,14 +15,15 @@ var getErrorMessage = function (err) {
 
 // 创建地图标记
 exports.mapLabelCreate = function (req, res) {
-    // 前台提供body中的数据，
-    // 包括中文地址address，geojson坐标，标注信息
+  // 前台提供body中的数据，
+  // 包括中文地址address，geojson坐标，标注信息
+  console.log(req.body)
   var mapLabel = new MapLabel(req.body)
-        // 将经过passport身份验证的当前用户设置为此地图标记的创建者
+  // 将经过passport身份验证的当前用户设置为此地图标记的创建者
   mapLabel.labelPerson = req.user
-        // 保存新创建的地图标记
-        // 出现错误则返回第一个有message属性的的错误message
-        // 成功则将新创建的地图标记返回
+  // 保存新创建的地图标记
+  // 出现错误则返回第一个有message属性的的错误message
+  // 成功则将新创建的地图标记返回
   mapLabel.save(function (err) {
     if (err) {
       return res.json({
