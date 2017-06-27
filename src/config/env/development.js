@@ -11,7 +11,7 @@ module.exports = {
      * 1 week: 604800000
      */
     // Development configuration options
-  db: 'mongodb://dbdevterster:dbdevterster$0609@localhost/mean-book',
+  db: 'mongodb://localhost/VGIDatabase',
   sessionSecret: 'developmentSessionSecret',
   'ttl': 86400000, // 1 hour
   'resetTokenExpiresMinutes': 20 // 20 minutes later
