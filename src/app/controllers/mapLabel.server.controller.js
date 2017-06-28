@@ -61,9 +61,13 @@ exports.mapLabelCreate = function(req, res) {
 }
 
 // 使用populate返回地图标记列表
+//将所有的地图标记按照其_id进行排序
 exports.mapLabelList = function(req, res) {
     // 为0表示不填充，为1时表示填充。
-    MapLabel.find().sort('-date_created').populate({ path: 'labelPerson', select: { token: 0, _id: 0 } })
+    MapLabel.find().sort({ _id: -1 }).populate({
+            path: 'labelPerson',
+            select: { token: 0, _id: 0 }
+        })
         .exec(function(err, mapLabels) {
             if (err) {
                 return res.json({

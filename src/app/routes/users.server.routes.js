@@ -32,4 +32,7 @@ module.exports = function(app) {
     //获取该用户所做的所有地图标记
     app.route('/users/info/getAllMapLabels')
         .post(users.jwtAuth, users.requireAuth, users.getAllMapLabel)
+        //获取某个用户的单个地图标记
+    app.route('/info/getSingleMaplabel/:username/:mapLabelId')
+        .post(users.jwtAuth, users.requireAuth, users.getSingleMapLabel)
 }

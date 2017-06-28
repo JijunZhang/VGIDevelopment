@@ -301,12 +301,12 @@ exports.requireAuth = function(req, res, next) {
 }
 
 //获取该用户所做的所有地图标记
-//获取标记信息，按照地图标记创建的时间排序
+//获取标记信息，按照地图标记创建的_id排序
 exports.getAllMapLabel = function(req, res) {
     User.find({}, { _id: 0, username: 1, user_mapLabel: 1 }).populate({
         path: 'user_mapLabel',
         select: { labelMessage: 1 },
-        options: { sort: { date_created: -1 } }
+        options: { sort: { _id: -1 } }
     }).exec(function(err, userMapLabels) {
         if (err) {
             return res.json({
@@ -317,21 +317,29 @@ exports.getAllMapLabel = function(req, res) {
             })
         }
 
-        //提取字段
-        for (var i = 0, n = userMapLabels.length; i < n; i++) {
-            for (var j = 0, m = userMapLabels[i].user_mapLabel.length; j < m; j++) {
-                //删除不需要返回的字段
-                delete userMapLabels[i].user_mapLabel[j]['_id']
-                delete userMapLabels[i].user_mapLabel[j]['coordinate']
-                delete userMapLabels[i].user_mapLabel[j]['address']
-            }
-            // delete userMapLabels[i]['token']
-            // delete userMapLabels[i]['_id']
-            // delete userMapLabels[i]['loginStatus']
+        //提取字段；此for循环可用于删除某些不必要返回的字段，
+        //此处在select处进行提取即可
 
-        }
+        // for (var i = 0, n = userMapLabels.length; i < n; i++) {
+
+        //     for (var j = 0, m = userMapLabels[i].user_mapLabel.length; j < m; j++) {
+        //         console.log('userMapLabel.user_mapLabel[0]:' + userMapLabels[i].user_mapLabel[0])
+
+        //         console.log('userMapLabel.user_mapLabel type:' + typeof(userMapLabels[i].user_mapLabel))
+        //         console.log('userMapLabels[i] _id:' + userMapLabels[i].user_mapLabel[j]['_id'])
+        //             //删除不需要返回的字段
+        //             //delete userMapLabels[i].user_mapLabel[j]['coordinate']
+        //             //delete userMapLabels[i].user_mapLabel[j]['address']
+
+        //     }
+        //     // delete userMapLabels[i]['token']
+        //     // delete userMapLabels[i]['_id']
+        //     // delete userMapLabels[i]['loginStatus']
+
+        // }
         //console.log(userMapLabels[0])
-        //返回信息
+        //返回信息，只包含labelMessage信息
+        //并且按照按照地图标记创建的_id排序
         if (userMapLabels) {
             res.json({
                 status: {
@@ -344,10 +352,69 @@ exports.getAllMapLabel = function(req, res) {
             return res.json({
                 status: {
                     code: 400,
-                    message: '获取提取字段后的地图标记信息失败'
+                    message: '没有提取出所有地图标记的信息'
                 }
             })
         }
 
+    })
+}
+
+//获取某个用户的单个地图标记
+//userMapLabel为查找出来的用户
+exports.getSingleMapLabel = function(req, res) {
+
+    var username = req.params.username
+    var mapLabelId = req.params.mapLabelId
+        //console.log('username:' + username)
+        //console.log('mapLabelId:' + mapLabelId)
+    User.find({ username: username }, { _id: 0, username: 1, user_mapLabel: 1 }).populate({
+        path: 'user_mapLabel',
+        select: { labelPerson: 0 }
+    }).exec(function(err, userMapLabel) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '获取某个用户' + username + '的单个地图标记' + mapLabelId + '信息失败'
+                }
+            })
+        }
+        //虽然userMapLabel长度为1，是一个单一的用户信息，但是要使用两个for循环来进行id的判断
+        //要使用userMapLabel[i].user_mapLabel[j]['_id']来提取id的值，此处提取的数值为object类型
+        //所以进行比较是，要使用toString()方法
+        //提取user_mapLabel字段时，也要使用userMapLabel[0].user_mapLabel类似的样式，否则提取字段为undefine
+        for (var i = 0, n = userMapLabel.length; i < n; i++) {
+            for (var j = 0, m = userMapLabel[i].user_mapLabel.length; j < m; j++) {
+                // console.log('userMapLabel.user_mapLabel[0]:' + userMapLabel[i].user_mapLabel[0])
+                // console.log('userMapLabel.user_mapLabel type:' + typeof(userMapLabel[i].user_mapLabel))
+                // console.log('userMapLabel.length:' + userMapLabel.length)
+                //console.log('userMapLabel.user_mapLabel.length:' + userMapLabel[i].user_mapLabel.length)
+                //console.log('userMapLabel[i].user_mapLabel[j] _id' + typeof(userMapLabel[i].user_mapLabel[j]['_id']))
+                //判断id是否相同
+                if (mapLabelId === userMapLabel[i].user_mapLabel[j]['_id'].toString()) {
+                    var mapLabel = userMapLabel[i].user_mapLabel[j]
+                    break
+                }
+            }
+        }
+        // console.log('mapLabel:' + mapLabel)
+        //返回单个地图标记信息，此信息中不包含labelPerson字段
+        if (mapLabel) {
+            res.json({
+                status: {
+                    code: 200,
+                    message: '成功获取指定用户所查看的单个地图标记'
+                },
+                data: mapLabel
+            })
+        } else {
+            res.json({
+                status: {
+                    code: 400,
+                    message: '没有提取出指定用户' + username + '所查看的单个地图标记' + mapLabelId + '信息'
+                }
+            })
+        }
     })
 }

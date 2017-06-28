@@ -27,4 +27,8 @@ router.route('/reset/password') // 本地用户重置密码
 router.route('/info/getAllMapLabels')
     .post(users.jwtAuth, users.requireAuth, users.getAllMapLabel)
 
+//获取某个用户的单个地图标记
+router.route('/info/getSingleMaplabel/:username/:mapLabelId')
+    .post(users.jwtAuth, users.requireAuth, users.getSingleMapLabel)
+
 module.exports = router
