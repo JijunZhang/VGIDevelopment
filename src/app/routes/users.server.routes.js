@@ -32,7 +32,16 @@ module.exports = function(app) {
     //获取该用户所做的所有地图标记
     app.route('/users/info/getAllMapLabels')
         .post(users.jwtAuth, users.requireAuth, users.getAllMapLabel)
-        //获取某个用户的单个地图标记
-    app.route('/info/getSingleMaplabel/:username/:mapLabelId')
-        .post(users.jwtAuth, users.requireAuth, users.getSingleMapLabel)
+
+    //获取某个用户的单个地图标记
+    app.route('/info/getSingleMaplabel/:mapLabelId')
+        .post(users.jwtAuth, users.requireAuth, users.getSingleMapLabelFromAnyOne)
+
+    //更新用户信息，
+    app.route('/info/updateUserInfo')
+        .post(users.jwtAuth, users.requireAuth, users.updateUserInfo)
+
+    //取出用户信息，剔除掉敏感字段
+    app.route('/info/getUserInfo')
+        .post(users.jwtAuth, users.requireAuth, users.getUserInfo)
 }

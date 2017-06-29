@@ -54,7 +54,12 @@ exports.mapLabelCreate = function(req, res) {
                     code: 200,
                     message: '成功创建地图标记'
                 },
-                data: mapLabel
+                data: {
+                    id: mapLabel['_id'],
+                    address: mapLabel.address,
+                    labelMessage: mapLabel.labelMessage,
+                    coordinate: mapLabel.coordinate
+                }
             })
         }
     })
@@ -64,9 +69,9 @@ exports.mapLabelCreate = function(req, res) {
 //将所有的地图标记按照其_id进行排序
 exports.mapLabelList = function(req, res) {
     // 为0表示不填充，为1时表示填充。
-    MapLabel.find().sort({ _id: -1 }).populate({
-            path: 'labelPerson',
-            select: { token: 0, _id: 0 }
+    MapLabel.find({}, { labelPerson: 0 }).sort({ _id: -1 }).populate({
+            path: 'labelPerson'
+                //select: { token: 0, _id: 0 }
         })
         .exec(function(err, mapLabels) {
             if (err) {
@@ -177,7 +182,7 @@ exports.mapLabelDelete = function(req, res) {
 // 所以，所以针对已有文档进行操作的控制器方法，就可以方便通过请求
 // 对象获取MapLabel对象
 exports.mapLabelByID = function(req, res, next, id) {
-    MapLabel.findById(id).populate({ path: 'labelPerson', select: { token: 0 } })
+    MapLabel.findById(id, { labelPerson: 0 }).populate({ path: 'labelPerson' })
         .exec(function(err, mapLabel) {
             // 地图标记没找到时的处理方法
             if (err || !mapLabel) {

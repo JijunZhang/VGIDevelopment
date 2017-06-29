@@ -74,7 +74,7 @@ var UserSchema = new Schema({
     },
     gender: {
         //  性别
-        type: Boolean
+        type: String
     },
     location: {
         //  位置
@@ -128,6 +128,7 @@ UserSchema.statics.hasExpired = function(created) {
 UserSchema.statics.findUser = function(username, token, cb) {
     var self = this
     this.findOne({ username: username }, function(err, usr) {
+        //console.log('id test:' + usr['_id'])
         if (err || !usr) {
             cb(err, null)
         } else if (usr.token && (token === usr.token)) {

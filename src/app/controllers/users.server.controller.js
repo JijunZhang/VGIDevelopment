@@ -360,12 +360,13 @@ exports.getAllMapLabel = function(req, res) {
     })
 }
 
-//获取某个用户的单个地图标记
+//获取某个特定用户的单个地图标记，此function暂时无用
 //userMapLabel为查找出来的用户
-exports.getSingleMapLabel = function(req, res) {
-
-    var username = req.params.username
+exports.getSingleMapLabelFronOne = function(req, res) {
+    //使用token获取req.user，不需要在路由中传入username
+    //var username = req.params.username
     var mapLabelId = req.params.mapLabelId
+    var username = req.user.username
         //console.log('username:' + username)
         //console.log('mapLabelId:' + mapLabelId)
     User.find({ username: username }, { _id: 0, username: 1, user_mapLabel: 1 }).populate({
@@ -416,5 +417,130 @@ exports.getSingleMapLabel = function(req, res) {
                 }
             })
         }
+    })
+}
+
+//用户获取某个地图标记信息，可以获取自己的也可以获取别人的
+//此时不需要传入username来查找特定的用户
+exports.getSingleMapLabelFromAnyOne = function(req, res) {
+
+    var mapLabelId = req.params.mapLabelId
+    var username = req.user.username
+
+    User.find({}, { _id: 0, username: 1, user_mapLabel: 1 }).populate({
+        path: 'user_mapLabel',
+        select: { labelPerson: 0 }
+    }).exec(function(err, userMapLabels) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '用户' + username + '获取地图标记' + mapLabelId + '信息失败'
+                }
+            })
+        }
+        //获取需要的地图标记信息
+        for (var i = 0, n = userMapLabels.length; i < n; i++) {
+            for (var j = 0, m = userMapLabels[i].user_mapLabel.length; j < m; j++) {
+                //判断id是否相同
+                if (mapLabelId === userMapLabels[i].user_mapLabel[j]['_id'].toString()) {
+                    var mapLabel = userMapLabels[i].user_mapLabel[j]
+                    break
+                }
+            }
+        }
+        // console.log('mapLabel:' + mapLabel)
+        //返回单个地图标记信息，此信息中不包含labelPerson字段
+        if (mapLabel) {
+            res.json({
+                status: {
+                    code: 200,
+                    message: '用户' + username + '成功获取所查看的单个地图标记'
+                },
+                data: mapLabel
+            })
+        } else {
+            res.json({
+                status: {
+                    code: 400,
+                    message: '用户' + username + '没有提取出所查看的单个地图标记' + mapLabelId + '信息'
+                }
+            })
+        }
+    })
+}
+
+//更新用户信息，
+//包括email,age,gender,location,occupation,speciality,telephone
+exports.updateUserInfo = function(req, res) {
+    //取出要更新的用户，req.user由token值出取出
+    var user = req.user
+
+    //更新此用户的信息
+    user.email = req.body.email || ''
+    user.age = req.body.age || ''
+    user.gender = req.body.gender || ''
+    user.location = req.body.location || ''
+    user.occupation = req.body.occupation || ''
+    user.speciality = req.body.speciality || ''
+    user.telephone = req.body.telephone || ''
+
+    //当字段gender为boolen类型时，需要进行判断
+    // if (req.body.gender === '男') {
+    //     user.gender = true
+    // } else if (req.body.gender === '女') {
+    //     user.gender = false
+    // } else {
+    //     user.gender = null
+    // }
+
+    //保存更新的用户信息
+    user.save(function(err) {
+        //更新成功则返回用户的更新信息以及用户名
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '更新用户' + user.username + '信息失败'
+                }
+            })
+        } else {
+            //剔除不需要返回的数据
+            User.findOne({ username: user.username }, { _id: 0, token: 0 }, function(err, usr) {
+                res.json({
+                    status: {
+                        code: 200,
+                        message: '更新用户' + user.username + '信息成功'
+                    },
+                    data: usr
+                })
+            })
+
+        }
+    })
+}
+
+//取出用户信息，剔除掉敏感字段
+exports.getUserInfo = function(req, res) {
+
+    //取出要更新的用户，req.user由token值出取出
+    var user = req.user
+    User.find({ username: user.username }, { _id: 0, token: 0 }, function(err, usr) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '取出用户' + user.username + '信息失败'
+                }
+            })
+        }
+
+        res.json({
+            status: {
+                code: 200,
+                message: '取出用户' + user.username + '信息成功'
+            },
+            data: usr
+        })
     })
 }
