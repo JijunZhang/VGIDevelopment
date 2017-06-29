@@ -300,7 +300,7 @@ exports.requireAuth = function(req, res, next) {
     }
 }
 
-//获取该用户所做的所有地图标记
+//用户获取所有地图标记信息
 //获取标记信息，按照地图标记创建的_id排序
 exports.getAllMapLabel = function(req, res) {
     User.find({}, { _id: 0, username: 1, user_mapLabel: 1 }).populate({
