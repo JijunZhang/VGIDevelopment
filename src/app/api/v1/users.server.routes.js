@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const users = require('../../controllers/users.server.controller')
+const upload = require('../../../config/uploadConfig')
 const passport = require('passport')
 
 //  处理用户相关的路由请求
@@ -39,5 +40,9 @@ router.route('/info/updateUserInfo')
 //取出用户信息，剔除掉敏感字段
 router.route('/info/getUserInfo')
     .post(users.jwtAuth, users.requireAuth, users.getUserInfo)
+
+//上传头像，upload.single('avatar')，此处single引号内名称必须与表单上传的图片name属性的名称一致
+router.route('/upload/avatar')
+    .post(users.jwtAuth, users.requireAuth, upload.single('avatar'), users.uploadAvatar)
 
 module.exports = router

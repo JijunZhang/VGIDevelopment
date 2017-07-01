@@ -1,4 +1,5 @@
 var users = require('../controllers/users.server.controller')
+var upload = require('../../config/uploadConfig')
 var passport = require('passport')
 
 module.exports = function(app) {
@@ -44,4 +45,8 @@ module.exports = function(app) {
     //取出用户信息，剔除掉敏感字段
     app.route('/info/getUserInfo')
         .post(users.jwtAuth, users.requireAuth, users.getUserInfo)
+
+    //上传头像，upload.single('avatar')，此处single引号内名称必须与表单上传的图片name属性的名称一致
+    app.route('/upload/avatar')
+        .post(users.jwtAuth, users.requireAuth, upload.single('avatar'), users.uploadAvatar)
 }

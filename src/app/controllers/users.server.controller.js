@@ -544,3 +544,53 @@ exports.getUserInfo = function(req, res) {
         })
     })
 }
+
+//上传头像
+exports.uploadAvatar = function(req, res) {
+    //使用利用token获取的用户信息
+    var user = req.user
+    var file = req.file;
+
+    // console.log('文件类型：%s', file.mimetype)
+    // console.log('原始文件名：%s', file.originalname)
+    // console.log('文件大小：%s', file.size)
+
+    // //file.path:F:\VGI\zjj0604\VGIDevelopment\src\uploads\avatar_1498878238352.jpg
+    // console.log('文件保存路径：%s', file.path)
+
+    // //file.destination:F:\VGI\zjj0604\VGIDevelopment\src/uploads
+    // console.log('fiel.destination:' + file.destination)
+    // var avatarNewPath = file.destination + '/' + file.filename
+    // console.log('avatarNewPath:' + avatarNewPath)
+    // res.send('上传图片成功')
+
+    if (file.filename) {
+        //保存用户的头像名称
+        user.avatar = file.filename
+        user.save(function(err) {
+            if (err) {
+                return res.json({
+                    status: {
+                        code: 400,
+                        message: '头像上传成功，但是保存头像名称失败'
+                    }
+                })
+            } else {
+                res.json({
+                    status: {
+                        code: 200,
+                        message: '在数据库中保存头像名称成功'
+                    },
+                    data: file.filename
+                })
+            }
+        })
+    } else {
+        res.json({
+            status: {
+                code: 200,
+                message: '头像上传失败'
+            }
+        })
+    }
+}
