@@ -58,6 +58,16 @@ var UserSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'MapLabel'
     }],
+    //用于保存用户创建任务的索引,用户可创建多个任务
+    tasks: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Task'
+    }],
+    //用于保存用户做了哪些任务的索引，用户可做多个任务
+    user_task: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Task'
+    }],
 
     //  Token令牌
     token: { type: String },

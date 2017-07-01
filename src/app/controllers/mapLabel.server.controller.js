@@ -1,18 +1,19 @@
 var MapLabel = require('../models/maplabel.server.model')
 var User = require('../models/user.server.model')
+var getErrorMessage = require('../../utils/utils').getErrorMessage
 
 // 处理mongoose错误
-var getErrorMessage = function(err) {
-    if (err.errors) {
-        // 返回第一个有message属性的的错误message
-        // 避免抛给用户一大堆错误
-        for (var errName in err.errors) {
-            if (err.errors[errName].message) return err.errors[errName].message
-        }
-    } else {
-        return 'Unknow server error'
-    }
-}
+// var getErrorMessage = function(err) {
+//     if (err.errors) {
+//         // 返回第一个有message属性的的错误message
+//         // 避免抛给用户一大堆错误
+//         for (var errName in err.errors) {
+//             if (err.errors[errName].message) return err.errors[errName].message
+//         }
+//     } else {
+//         return 'Unknow server error'
+//     }
+// }
 
 // 创建地图标记
 exports.mapLabelCreate = function(req, res) {
