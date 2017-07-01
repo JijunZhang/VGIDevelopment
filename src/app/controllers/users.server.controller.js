@@ -581,7 +581,7 @@ exports.uploadAvatar = function(req, res) {
                         code: 200,
                         message: '在数据库中保存头像名称成功'
                     },
-                    data: file.filename
+                    data: file.filename //此处返回信息根据前台需要可修改
                 })
             }
         })
