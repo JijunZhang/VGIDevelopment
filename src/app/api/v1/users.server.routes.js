@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const users = require('../../controllers/users.server.controller')
 const passport = require('passport')
-const uploadConfig = require('../../../config/uploadConfig')
+const upload = require('../../../config/uploadConfig')
 
 router.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', '*')
@@ -30,7 +30,8 @@ router.route('/forgotandreset/local') // 本地用户忘记并重置密码
 router.route('/reset/password') // 本地用户重置密码
     .post(users.jwtAuth, users.requireAuth, users.resetPassword)
 
+//上传头像
 router.route('/upload/avatar')
-    .post(uploadConfig.uploadConfig('avatar'), users.uploadAvatar)
+    .post(users.jwtAuth, users.requireAuth, upload.single('avatar'), users.uploadAvatar)
 
 module.exports = router

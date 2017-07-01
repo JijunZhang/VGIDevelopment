@@ -20,8 +20,11 @@ var createFolder = function(folder) {
 var now = new Date();
 //上传文件配置
 //var uploadFolder = './upload/' + 'image/' + now.getFullYear() + '/' + now.getMonth() + '/' + now.getDate()
-var uploadFolder = './upload/' + 'avatars/' + now.getFullYear() + '/' + now.getMonth() + '/' + now.getDate()
-    //创建保存路径
+//文件格式：upload/avatars/2017/7/1/图片filename，暂时可不考虑如此复杂
+//var uploadFolder = './upload/' + 'avatars/' + now.getFullYear() + '/' +now.getMonth() + '/' + now.getDate()
+var uploadFolder = './upload/' + 'avatars'
+
+//创建保存路径
 createFolder(uploadFolder)
     //配置文件名与保存路径
 var storage = multer.diskStorage({
@@ -40,6 +43,12 @@ var upload = multer({ storage: storage })
 
 app.post('/upload', upload.single('avatar'), function(req, res) {
     var file = req.file;
+    console.log('文件类型：%s', file.mimetype);
+    console.log('原始文件名：%s', file.originalname);
+    console.log('文件大小：%s', file.size);
+    console.log('文件保存路径：%s', file.path);
+    console.log('fiel.destination:' + file.destination)
+
     var extName = '' //后缀名
         //判断上传文件的后缀名
     switch (file.mimetype) {
