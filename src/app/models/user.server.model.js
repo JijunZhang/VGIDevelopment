@@ -88,9 +88,9 @@ var UserSchema = new Schema({
         //  特长
         type: String
     },
-    portrait: {
+    avatar: {
         //  头像
-        type: Buffer
+        type: String
     },
     telephone: {
         //  电话号码
