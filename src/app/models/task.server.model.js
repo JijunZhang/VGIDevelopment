@@ -21,9 +21,9 @@ var TaskSchema = new Schema({
         },
         coordinates: {
             type: [Number],
-            index: { type: '2dsphere', sparse: true }
-        },
-        required: true
+            index: { type: '2dsphere', sparse: true },
+            required: true
+        }
     },
     //任务的简要描述（必填）
     introduction: {
@@ -38,7 +38,8 @@ var TaskSchema = new Schema({
     },
     //任务所需最大人数
     personNumMax: {
-        type: Number
+        type: Number,
+        default: 3
     },
     //任务所需最小人数
     personNumMin: {
@@ -66,7 +67,12 @@ var TaskSchema = new Schema({
     participants: [{
         type: Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    //关联任务创建者信息
+    taskCreator: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }
 
 })
 
