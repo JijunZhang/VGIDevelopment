@@ -16,8 +16,30 @@ exports.addTask = function(req, res) {
     var userTask = req.user
 
     //将用户创建的任务索引放在用户的tasks此字段中
-    userTask.tasks.push(task)
+    //获取tasks字段添加任务索引之后的长度
+    //在保存任务之前，先在用户中保存任务的索引，防止任务索引未在用户中保存，任务已经创建成功
+    var taskPushlen = userTask.tasks.push(task)
 
+    if (!(taskPushlen > userTask.tasks.length - 1)) {
+        return res.json({
+            status: {
+                code: 400,
+                message: '用户tasks字段中插入任务索引失败'
+            }
+        })
+    } else {
+        //在保存任务信息之前，保存用户关联的任务索引信息
+        userTask.save(function(err) {
+            if (err) {
+                return res.json({
+                    status: {
+                        code: 400,
+                        message: '用户关联自己创建的任务索引失败'
+                    }
+                })
+            }
+        })
+    }
     //保存任务
     task.save(function(err) {
         if (err) {
@@ -28,18 +50,6 @@ exports.addTask = function(req, res) {
                 }
             })
         } else {
-            //保存用户关联的任务索引信息
-            userTask.save(function(err) {
-                if (err) {
-                    return res.json({
-                        status: {
-                            code: 400,
-                            message: '用户关联自己创建的任务索引失败'
-                        }
-                    })
-                }
-            })
-
             //创建任务成功则返回刚才创建的任务信息，可根据需要提取字段
             res.json({
                 status: {
@@ -120,9 +130,9 @@ exports.updateTask = function(req, res) {
     task.coordinate = req.body.coordinate
     task.introduction = req.body.introduction
     task.details = req.body.details
-    task.personNumMax = req.body.personNumMax
-    task.personNumMin = req.body.personNumMin
-    task.taskStatus = req.body.taskStatus
+    task.personNumMax = req.body.personNumMax || 3
+    task.personNumMin = req.body.personNumMin || 1
+    task.taskStatus = req.body.taskStatus || '未开始'
     task.keyWord = req.body.keyWord
 
     //将修改后的信息保存到数据库中
@@ -141,7 +151,12 @@ exports.updateTask = function(req, res) {
                     code: 200,
                     message: '任务更新成功'
                 },
-                data: task
+                //根据前台需要返回更新数据
+                data: {
+                    id: task['_id'],
+                    introduction: task.introduction,
+                    keyWord: task.keyWord
+                }
             })
         }
     })
@@ -152,6 +167,39 @@ exports.removeTask = function(req, res) {
     var task = req.task
     var user = req.user
 
+    //在用户的tasks字段中删除该任务的索引
+    for (i = 0, n = user.tasks.length; i < n; i++) {
+        if (task.id === user.tasks[i].toString()) {
+            //找到后利用splice方法进行删除
+            //splice() 方法向/从数组中添加/删除项目，然后返回被删除的项目。
+            var removeTaskId = user.tasks.splice(i, 1)
+            break
+        }
+    }
+
+    if (!removeTaskId) {
+        return res.json({
+            status: {
+                code: 400,
+                message: '用户tasks字段中删除任务索引失败'
+            }
+        })
+    } else {
+        //tasks字段中的任务索引删除后，保存用户信息
+        user.save(function(err) {
+            if (err) {
+                return res.json({
+                    status: {
+                        code: 400,
+                        message: 'tasks字段中的任务索引删除失败'
+                    }
+                })
+            }
+        })
+    }
+
+    //先进行再用户tasks字段中删除任务索引，再在task模型中删除任务信息
+    //防止用户中任务索引没有被删除，而任务已被删除
     task.remove(function(err) {
         if (err) {
             return res.json({
@@ -161,26 +209,6 @@ exports.removeTask = function(req, res) {
                 }
             })
         } else {
-            //在用户的tasks字段中删除该任务的索引
-            for (i = 0, n = user.tasks.length; i < n; i++) {
-                if (task.id === user.tasks[i]) {
-                    //找到后利用splice方法进行删除
-                    user.tasks.splice(i, 1)
-                    break
-                }
-            }
-            //tasks字段中的任务索引删除后，保存用户信息
-            user.save(function(err) {
-                if (err) {
-                    return res.json({
-                        status: {
-                            code: 400,
-                            message: 'tasks字段中的任务索引删除失败'
-                        }
-                    })
-                }
-            })
-
             // 返回删除的任务，可考虑不返回，看前台要求
             res.json({
                 status: {

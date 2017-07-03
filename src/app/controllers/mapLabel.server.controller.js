@@ -202,7 +202,7 @@ exports.removeMapLabel = function(req, res) {
         })
     }
 
-    //先进行再用户字段user_maoLabel字段中删除地图标记索引，再删除在MapLabel模型中删除地图标记
+    //先进行再用户user_maoLabel字段中删除地图标记索引，再在MapLabel模型中删除地图标记
     //防止用户中地图标记索引没有被删除，而地图标记已被删除
     mapLabel.remove(function(err) {
         if (err) {
