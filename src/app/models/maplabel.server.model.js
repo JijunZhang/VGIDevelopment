@@ -29,6 +29,11 @@ var MapLabelSchema = new Schema({
         required: true,
         trim: true
     },
+    //在进行地图标记时，用户可进行地图图片上传，提供图片信息
+    //此字段存储地图图片的名称
+    mapImage: {
+        type: String
+    },
     // 标注人 表明此地理位置由某人标注
     //一个 mapLabel--has one-->user
     labelPerson: {

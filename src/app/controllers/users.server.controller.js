@@ -1,6 +1,8 @@
 var User = require('../models/user.server.model')
 var passport = require('passport')
 var flash = require('../../utils/utils').flash
+var config = require('../../config/config')
+var fs = require('fs')
 
 // Create a new error handling controller method
 var getErrorMessage = function(err) {
@@ -549,7 +551,8 @@ exports.getUserInfo = function(req, res) {
 exports.uploadAvatar = function(req, res) {
     //使用利用token获取的用户信息
     var user = req.user
-    var file = req.file;
+    var file = req.file
+
 
     // console.log('文件类型：%s', file.mimetype)
     // console.log('原始文件名：%s', file.originalname)
@@ -564,6 +567,42 @@ exports.uploadAvatar = function(req, res) {
     // console.log('avatarNewPath:' + avatarNewPath)
     // res.send('上传图片成功')
 
+    //如果用户头像名称不存在，则进行第一次上传头像事件，即将字段名保存在用户的avatar字段中
+    //并且将头像保存在相应的位置；如果头像名称已经存在，则进行修改头像事件，删除原头像，将字段
+    //avatar中保存的头像名称改变为修改之后的，然后再次保存用户信息
+    if (!user.avatar) {
+        //保存头像信息
+        saveAvatar(res, user, file)
+    } else {
+        //提取原始头像的路径
+        var oldAvatarName = user.avatar
+        var oldAvatarPath = config.upload.path + '/' + oldAvatarName
+        oldAvatarPath = oldAvatarPath.replace(/\//g, '\\')
+            //console.log('oldAvatarPath:' + oldAvatarPath)
+
+        //删除原始头像    此处使用res.json会报错，提示未设置头部
+        //此处要再看看文件模块信息
+        fs.exists(oldAvatarPath, function(existAvatar) {
+            if (existAvatar) {
+                fs.unlink(oldAvatarPath, function(err) {
+                    if (err) {
+                        console.log('没有删除原始头像，修改头像失败')
+                        return
+                    }
+
+                })
+            } else {
+                console.log('原始头像不存在')
+                return
+            }
+        })
+
+        //保存修改之后的头像
+        saveAvatar(res, user, file)
+    }
+}
+
+function saveAvatar(res, user, file) {
     if (file.filename) {
         //保存用户的头像名称
         user.avatar = file.filename
@@ -591,6 +630,62 @@ exports.uploadAvatar = function(req, res) {
                 code: 200,
                 message: '头像上传失败'
             }
+        })
+    }
+}
+
+//此处使用res.sendFile传送文件，但是实际开发过程中不会使用此方法
+//因为它必须针对每次文件请求读取文件系统，所以会产生严重的延迟，影响应用程序的总体性能
+//使用逆向代理Nginx，逆向代理位于 Web 应用程序之前，除了将请求转发给应用程序外，还对请求执行支持性操作。
+//它还可以处理错误页、压缩、高速缓存、文件服务和负载均衡等功能。
+exports.getAvatar = function(req, res) {
+    //获取所需图片的名称
+    var avatarName = req.params.avatarName
+
+    //将路径中的‘/’修改为‘\’
+    var rootPath = config.upload.path.replace(/\//g, '\\')
+
+    //此处可根据需要进行修改，设置根路径之类的参数
+    var options = {
+        root: rootPath,
+        dotfile: 'deny',
+        headers: {
+            'x-timestamp': Date.now(),
+            'x-sent': true
+        }
+    }
+
+    //根据路径，传送头像文件给前台
+    //获取图片，考虑是否先读取出图片，存为二进制或者什么形式，传给前台
+    res.sendFile(avatarName, options, function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '传输图片失败'
+                }
+            })
+        } else {
+            console.log('请求的头像' + avatarName + '传输成功')
+        }
+    })
+
+}
+
+exports.testBody = function(req, res) {
+    var file = req.file
+    var body = req.body
+    console.log('文件类型：%s', file.mimetype)
+    console.log('原始文件名：%s', file.originalname)
+    console.log('文件大小：%s', file.size)
+    console.log('user:' + req.user.username)
+    if (body) {
+        res.json({
+            body: body
+        })
+    } else {
+        res.json({
+            message: 'req.body不存在'
         })
     }
 }

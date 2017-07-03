@@ -20,8 +20,18 @@ exports.addMapLabel = function(req, res) {
     // 前台提供body中的数据，
     // 包括中文地址address，geojson坐标，标注信息
     //console.log(req.body)
+
+    var file = req.file
+    var body = req.body
+    console.log('文件类型：%s', file.mimetype)
+    console.log('原始文件名：%s', file.originalname)
+    console.log('文件大小：%s', file.size)
+    console.log('=============')
+    console.log('body:' + body)
+    console.log('===========')
     var mapLabel = new MapLabel(req.body)
-        // 将经过passport身份验证的当前用户设置为此地图标记的创建者
+
+    // 将经过passport身份验证的当前用户设置为此地图标记的创建者
     mapLabel.labelPerson = req.user
         //用req.user创建用户，用于为用户添加新字段
         // var userMaplabel = new User(req.user)
@@ -269,4 +279,16 @@ exports.hasAuthorization = function(req, res, next) {
         })
     }
     next()
+}
+
+//上传地图标记图片时，要考虑
+//1、跟创建地图标记一起，同时上传图片，（没想到好的实现方法）
+//2、创建完地图标记之后，再上传地图标记图片，使用中间件mapLabelByID
+//3、支持同时上传多张图片，后台接收，后台传送给前台问题
+exports.uploadMapImage = function(req, res) {
+    //通过中间件mapLabelByID获取
+    var mapLabel = req.mapLabel
+    var file = req.file
+
+
 }

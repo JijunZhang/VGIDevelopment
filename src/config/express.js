@@ -16,6 +16,7 @@ module.exports = function() {
         app.use(compress())
     }
 
+
     app.use(bodyParser.urlencoded({
         extended: true
     }))

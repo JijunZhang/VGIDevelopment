@@ -42,7 +42,15 @@ router.route('/info/getUserInfo')
     .post(users.jwtAuth, users.requireAuth, users.getUserInfo)
 
 //上传头像，upload.single('avatar')，此处single引号内名称必须与表单上传的图片name属性的名称一致
+//根据判断可进行修改头像操作
 router.route('/upload/avatar')
     .post(users.jwtAuth, users.requireAuth, upload.single('avatar'), users.uploadAvatar)
+
+//获取头像
+router.route('/upload/getAvatar/:avatarName')
+    .post(users.jwtAuth, users.requireAuth, users.getAvatar)
+
+router.route('/testBody')
+    .post(users.jwtAuth, users.requireAuth, upload.single('test'), users.testBody)
 
 module.exports = router

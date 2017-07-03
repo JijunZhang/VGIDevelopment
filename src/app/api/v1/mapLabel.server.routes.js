@@ -1,10 +1,11 @@
 const router = require('express').Router()
 const users = require('../../controllers/users.server.controller')
 const mapLabels = require('../../controllers/mapLabel.server.controller')
+const upload = require('../../../config/uploadConfig')
 
 router.route('/mapLabels')
     .get(mapLabels.listMapLabel)
-    .post(users.jwtAuth, users.requireAuth, mapLabels.addMapLabel)
+    .post(users.jwtAuth, users.requireAuth, upload.single('mapImage'), mapLabels.addMapLabel)
 
 router.route('/mapLabels/:mapLabelId')
     // 用于请求特定单个地图标记
