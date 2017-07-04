@@ -1,6 +1,8 @@
 var MapLabel = require('../models/maplabel.server.model')
 var User = require('../models/user.server.model')
 var getErrorMessage = require('../../utils/utils').getErrorMessage
+var config = require('../../config/config')
+var fs = require('fs')
 
 // 处理mongoose错误
 // var getErrorMessage = function(err) {
@@ -21,14 +23,114 @@ exports.addMapLabel = function(req, res) {
     // 包括中文地址address，geojson坐标，标注信息
     //console.log(req.body)
 
-    var file = req.file
+    var files = req.files
     var body = req.body
-    console.log('文件类型：%s', file.mimetype)
-    console.log('原始文件名：%s', file.originalname)
-    console.log('文件大小：%s', file.size)
-    console.log('=============')
-    console.log('body:' + body)
-    console.log('===========')
+
+    //从formdata的req.body中提取address，coordinate，labelMessage信息
+    var mapLabel = new MapLabel()
+    var coordinates = body.coordinates.split(',')
+
+    // console.log('coordinates[0]:' + coordinates[0])
+    // console.log('coordinates:' + typeof(coordinates))
+    //如果body.type有传入，则使用；默认为Point
+    var coordinate = {
+            coordinates: coordinates,
+            type: body.type ? body.type : 'Point'
+        }
+        // console.log('type:' + typeof(coordinate))
+        // console.log('coordinate:' + coordinate)
+
+    mapLabel.address = body.address
+    mapLabel.coordinate = coordinate
+    mapLabel.labelMessage = body.labelMessage
+
+    //提取labelPerson信息
+    // 将经过passport身份验证的当前用户设置为此地图标记的创建者
+    mapLabel.labelPerson = req.user
+
+    //提取上传的多张图片的名称信息
+    if (files) {
+        for (i = 0, n = files.length; i < n; i++) {
+            var file = files[i]
+
+            //使用push将图片的，名称放入mapImage字段中
+            mapLabel.mapImage.push(file.filename)
+        }
+    } else {
+        return res.json({
+            status: {
+                code: 200,
+                message: '地图图片上传失败'
+            }
+        })
+    }
+
+    //用req.user创建用户，用于为用户添加新字段
+    // var userMaplabel = new User(req.user)
+    var userMaplabel = req.user
+
+    //将地图标记的索引放在此字段中，使用数组栈方法push
+    //push() 方法可向数组的末尾添加一个或多个元素，并返回新的长度。
+    //虽然关联地图标记的索引没有保存在用户当中，但是user_mapLabel字段push之后长度已经发生变化
+    //即pushNewLen===userMaplabel.user_mapLabel.length，故使用pushNewLen > userMaplabel.user_mapLabel.length - 1
+    var pushNewLen = userMaplabel.user_mapLabel.push(mapLabel)
+    if (!(pushNewLen > userMaplabel.user_mapLabel.length - 1)) {
+        return res.json({
+            status: {
+                code: 400,
+                message: '用户user_mapLabel字段中插入地图标记索引失败'
+            }
+        })
+    } else {
+        //在保存地图标记的信息之前，先保存用户信息
+        userMaplabel.save(function(err) {
+            if (err) {
+                return res.json({
+                    status: {
+                        code: 400,
+                        message: '在用户中关联地图标记的索引失败'
+                    }
+                })
+            }
+        })
+    }
+    // 在保存新创建的地图标记之前，先保存用户中关联地图标记索引的信息，如果失败，地图标记不会被创建
+    // 出现错误则返回第一个有message属性的的错误message
+    // 成功则将新创建的地图标记返回
+    mapLabel.save(function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: getErrorMessage(err)
+                }
+            })
+        } else {
+            res.json({
+                status: {
+                    code: 200,
+                    message: '成功创建地图标记'
+                },
+                data: {
+                    id: mapLabel['_id'],
+                    address: mapLabel.address,
+                    labelMessage: mapLabel.labelMessage,
+                    coordinate: mapLabel.coordinate
+                }
+            })
+        }
+    })
+}
+
+//原始使用json格式传输数据的方法，没有传输图片
+exports.addMapLabel1 = function(req, res) {
+    // 前台提供body中的数据，
+    // 包括中文地址address，geojson坐标，标注信息
+    //console.log(req.body)
+
+
+    var body = req.body
+
     var mapLabel = new MapLabel(req.body)
 
     // 将经过passport身份验证的当前用户设置为此地图标记的创建者
@@ -145,6 +247,89 @@ exports.listSingleMapLabel = function(req, res) {
 // 使用http请求主体中的address、coordinate、labelMessage字段来进行更新
 // 利用mapLabelByID中间件
 exports.updateMapLabel = function(req, res) {
+    var files = req.files
+    var mapLabel = req.mapLabel
+
+    //取出原有的地图图片的名称
+    var oldMapImage = mapLabel.mapImage
+        //console.log('oldMapImage[0]:' + oldMapImage[0])
+
+    //原始图片存在，进行删除
+    if (oldMapImage) {
+
+        //使用forEach可以避免文件删除错误
+        oldMapImage.forEach(function(oldPath) {
+            var oldMapImagePath = config.upload.path + '/' + oldPath
+            oldMapImagePath = oldMapImagePath.replace(/\//g, '\\')
+
+            console.log('oldMapImagePath:' + oldMapImagePath)
+            fs.exists(oldMapImagePath, function(existMapImage) {
+                if (existMapImage) {
+                    fs.unlink(oldMapImagePath, function(err) {
+                        if (err) {
+                            console.log('没有删除原始地图图片，修改地图图片失败')
+                        }
+                    })
+                } else {
+                    console.log('原始地图图片不存在')
+                }
+            })
+        })
+    }
+
+    // 更新字段信息
+
+    var coordinates = req.body.coordinates.split(',')
+    var coordinate = {
+        coordinates: coordinates,
+        type: req.body.type ? body.type : 'Point'
+    }
+    mapLabel.coordinate = coordinate
+    mapLabel.address = req.body.address
+    mapLabel.labelMessage = req.body.labelMessage
+        //console.log('labelMessage:' + req.body.labelMessage)
+
+    //提取上传的多张图片的名称信息
+    if (files.length > 0) {
+        //更新地图图片信息，要把原有地图图片名称删除，再向其内添加更新的图片信息
+        mapLabel.mapImage = []
+        for (j = 0, m = files.length; j < m; j++) {
+            var file = files[j]
+
+            //使用push将图片的，名称放入mapImage字段中
+            mapLabel.mapImage.push(file.filename)
+        }
+    } else {
+        //更新地图图片时，没有传入地图图片，则需要把原有地图图片名称删除
+        //此处不能设置为null，或者‘’，否则后面无法进行push操作
+        mapLabel.mapImage = []
+    }
+
+    // 将修改后的地图标记保存到数据库中
+    mapLabel.save(function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: getErrorMessage(err)
+                }
+            })
+        } else {
+            // 返回更新的地图标记
+            res.json({
+                status: {
+                    code: 200,
+                    message: '地图标记更新成功'
+                },
+                data: mapLabel
+            })
+        }
+    })
+}
+
+//没有更新图片的方法
+exports.updateMapLabel1 = function(req, res) {
+
     var mapLabel = req.mapLabel
         // 更新字段信息
     mapLabel.address = req.body.address
@@ -285,10 +470,76 @@ exports.hasAuthorization = function(req, res, next) {
 //1、跟创建地图标记一起，同时上传图片，（没想到好的实现方法）
 //2、创建完地图标记之后，再上传地图标记图片，使用中间件mapLabelByID
 //3、支持同时上传多张图片，后台接收，后台传送给前台问题
-exports.uploadMapImage = function(req, res) {
-    //通过中间件mapLabelByID获取
-    var mapLabel = req.mapLabel
-    var file = req.file
+//根据图片名称获取单张图片，在用户查找单个地图标记的信息时，调用此方法传输图片
+//路由为/mapLabels/getMapImage/:mapImageId 把图像处理一下在传输
+exports.getMapImage = function(req, res) {
+    //获取所需图片的名称
+    var mapImageId = req.params.mapImageId
 
+    //将路径中的‘/’修改为‘\’
+    var rootPath = config.upload.path.replace(/\//g, '\\')
+
+    //此处可根据需要进行修改，设置根路径之类的参数
+    var options = {
+        root: rootPath,
+        dotfile: 'deny',
+        headers: {
+            'x-timestamp': Date.now(),
+            'x-sent': true
+        }
+    }
+
+    //根据路径，传送地图图片文件给前台
+    //获取图片，考虑是否先读取出图片，存为二进制或者什么形式，传给前台
+    res.sendFile(mapImageId, options, function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '传输图片失败'
+                }
+            })
+        } else {
+            console.log('请求的头像' + mapImageId + '传输成功')
+        }
+    })
+
+}
+
+
+exports.testBody = function(req, res) {
+    var files = req.files
+
+    var body = req.body
+    var mapLabel = new MapLabel()
+
+    for (i = 0, n = files.length; i < n; i++) {
+        var file = files[i]
+        mapLabel.mapImage.push(file.filename)
+    }
+
+    console.log('files, type:' + typeof(files))
+    console.log('files.filename type:' + typeof(files[0].filename))
+    console.log('files.filename:' + files[0].filename)
+    console.log('files.length' + files.length)
+
+    var coordinates = body.coordinates.split(',')
+    console.log('coordinates[0]:' + coordinates[0])
+    console.log('coordinates:' + typeof(coordinates))
+    var coordinate = {
+        coordinates: coordinates,
+        type: body.type
+    }
+    console.log('type:' + typeof(coordinate))
+    console.log('coordinate:' + coordinate)
+
+
+    mapLabel.address = body.address
+    mapLabel.coordinate = coordinate
+    mapLabel.labelMessage = body.labelMessage
+
+    res.json({
+        mapLabel: mapLabel
+    })
 
 }

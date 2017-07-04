@@ -50,7 +50,5 @@ router.route('/upload/avatar')
 router.route('/upload/getAvatar/:avatarName')
     .post(users.jwtAuth, users.requireAuth, users.getAvatar)
 
-router.route('/testBody')
-    .post(users.jwtAuth, users.requireAuth, upload.single('test'), users.testBody)
 
 module.exports = router

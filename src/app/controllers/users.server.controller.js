@@ -554,19 +554,6 @@ exports.uploadAvatar = function(req, res) {
     var file = req.file
 
 
-    // console.log('文件类型：%s', file.mimetype)
-    // console.log('原始文件名：%s', file.originalname)
-    // console.log('文件大小：%s', file.size)
-
-    // //file.path:F:\VGI\zjj0604\VGIDevelopment\src\uploads\avatar_1498878238352.jpg
-    // console.log('文件保存路径：%s', file.path)
-
-    // //file.destination:F:\VGI\zjj0604\VGIDevelopment\src/uploads
-    // console.log('fiel.destination:' + file.destination)
-    // var avatarNewPath = file.destination + '/' + file.filename
-    // console.log('avatarNewPath:' + avatarNewPath)
-    // res.send('上传图片成功')
-
     //如果用户头像名称不存在，则进行第一次上传头像事件，即将字段名保存在用户的avatar字段中
     //并且将头像保存在相应的位置；如果头像名称已经存在，则进行修改头像事件，删除原头像，将字段
     //avatar中保存的头像名称改变为修改之后的，然后再次保存用户信息
@@ -587,13 +574,11 @@ exports.uploadAvatar = function(req, res) {
                 fs.unlink(oldAvatarPath, function(err) {
                     if (err) {
                         console.log('没有删除原始头像，修改头像失败')
-                        return
                     }
 
                 })
             } else {
                 console.log('原始头像不存在')
-                return
             }
         })
 
@@ -670,22 +655,4 @@ exports.getAvatar = function(req, res) {
         }
     })
 
-}
-
-exports.testBody = function(req, res) {
-    var file = req.file
-    var body = req.body
-    console.log('文件类型：%s', file.mimetype)
-    console.log('原始文件名：%s', file.originalname)
-    console.log('文件大小：%s', file.size)
-    console.log('user:' + req.user.username)
-    if (body) {
-        res.json({
-            body: body
-        })
-    } else {
-        res.json({
-            message: 'req.body不存在'
-        })
-    }
 }
