@@ -58,6 +58,16 @@ var UserSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'MapLabel'
     }],
+    //用于保存用户创建任务的索引,用户可创建多个任务
+    tasks: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Task'
+    }],
+    //用于保存用户做了哪些任务的索引，用户可做多个任务
+    user_task: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Task'
+    }],
 
     //  Token令牌
     token: { type: String },
@@ -191,16 +201,17 @@ UserSchema.statics.createUserToken = function(username, cb) {
             if (err) {
                 cb(err, null)
             } else {
-                console.log('about to cb with usr.token: ' + usr.token)
+                //console.log('about to cb with usr.token: ' + usr.token)
                 cb(false, usr.token) // token object, in turn, has a token property :)
             }
         })
     })
 }
 
-//
+//销毁token中和登录状态
 UserSchema.statics.invalidateUserToken = function(username, cb) {
-    this.findOne({ username: username }, function(err, usr) {
+    var _this = this
+    _this.findOne({ username: username }, function(err, usr) {
         if (err || !usr) {
             console.log('err')
         }
@@ -213,6 +224,21 @@ UserSchema.statics.invalidateUserToken = function(username, cb) {
                 cb(false, 'removed')
             }
         })
+    })
+}
+
+//reset_token过期时，用于销毁reset_token与reset_token_expires_millis
+UserSchema.statics.invalidateResetToken = function(resetToken, cb) {
+    var _this = this
+    _this.findOne({ reset_token: resetToken }, function(err, usr) {
+        if (err || !usr) {
+            cb(err, null)
+        } else {
+            usr.reset_token = null
+            usr.reset_token_expires_millis = null
+            usr.save()
+            cb(false, usr)
+        }
     })
 }
 
