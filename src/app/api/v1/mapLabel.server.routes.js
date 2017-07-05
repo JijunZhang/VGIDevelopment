@@ -28,8 +28,6 @@ router.route('/mapLabels/:mapLabelId')
 // 查找出对应的mapLabel对象，并赋值给req.mapLabel
 router.param('mapLabelId', mapLabels.mapLabelByID)
 
-router.route('/testBody')
-    .post(users.jwtAuth, users.requireAuth, upload.array('mapImage'), mapLabels.testBody)
 
 //获取地图图片
 router.route('/mapLabels/getMapImage/:mapImageId')

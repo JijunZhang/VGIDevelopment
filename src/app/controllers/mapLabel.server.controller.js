@@ -57,12 +57,15 @@ exports.addMapLabel = function(req, res) {
             mapLabel.mapImage.push(file.filename)
         }
     } else {
-        return res.json({
-            status: {
-                code: 200,
-                message: '地图图片上传失败'
-            }
-        })
+        console.log('地图图片上传失败或者没有上传图片')
+
+        //此处使用return，如果没有传入图片，地图标记将无法创建
+        // return res.json({
+        //     status: {
+        //         code: 200,
+        //         message: '地图图片上传失败或者没有上传图片'
+        //     }
+        // })
     }
 
     //用req.user创建用户，用于为用户添加新字段
@@ -255,14 +258,14 @@ exports.updateMapLabel = function(req, res) {
         //console.log('oldMapImage[0]:' + oldMapImage[0])
 
     //原始图片存在，进行删除
-    if (oldMapImage) {
+    if (oldMapImage.length > 0) {
 
         //使用forEach可以避免文件删除错误
         oldMapImage.forEach(function(oldPath) {
             var oldMapImagePath = config.upload.path + '/' + oldPath
             oldMapImagePath = oldMapImagePath.replace(/\//g, '\\')
 
-            console.log('oldMapImagePath:' + oldMapImagePath)
+            //console.log('oldMapImagePath:' + oldMapImagePath)
             fs.exists(oldMapImagePath, function(existMapImage) {
                 if (existMapImage) {
                     fs.unlink(oldMapImagePath, function(err) {
@@ -290,7 +293,7 @@ exports.updateMapLabel = function(req, res) {
         //console.log('labelMessage:' + req.body.labelMessage)
 
     //提取上传的多张图片的名称信息
-    if (files.length > 0) {
+    if (files) {
         //更新地图图片信息，要把原有地图图片名称删除，再向其内添加更新的图片信息
         mapLabel.mapImage = []
         for (j = 0, m = files.length; j < m; j++) {
@@ -397,6 +400,30 @@ exports.removeMapLabel = function(req, res) {
         })
     }
 
+    //删除图片文件
+    var oldMapImage = mapLabel.mapImage
+
+    if (oldMapImage.length > 0) {
+        oldMapImage.forEach(function(oldPath) {
+
+            var oldMapImagePath = config.upload.path + '/' + oldPath
+            oldMapImagePath = oldMapImagePath.replace(/\//g, '\\')
+
+            //console.log('oldMapImagePath:' + oldMapImagePath)
+            fs.exists(oldMapImagePath, function(existMapImage) {
+                if (existMapImage) {
+                    fs.unlink(oldMapImagePath, function(err) {
+                        if (err) {
+                            console.log('没有删除原始地图图片，修改地图图片失败')
+                        }
+                    })
+                } else {
+                    console.log('原始地图图片不存在')
+                }
+            })
+        })
+    }
+
     //先进行再用户user_maoLabel字段中删除地图标记索引，再在MapLabel模型中删除地图标记
     //防止用户中地图标记索引没有被删除，而地图标记已被删除
     mapLabel.remove(function(err) {
@@ -466,10 +493,7 @@ exports.hasAuthorization = function(req, res, next) {
     next()
 }
 
-//上传地图标记图片时，要考虑
-//1、跟创建地图标记一起，同时上传图片，（没想到好的实现方法）
-//2、创建完地图标记之后，再上传地图标记图片，使用中间件mapLabelByID
-//3、支持同时上传多张图片，后台接收，后台传送给前台问题
+
 //根据图片名称获取单张图片，在用户查找单个地图标记的信息时，调用此方法传输图片
 //路由为/mapLabels/getMapImage/:mapImageId 把图像处理一下在传输
 exports.getMapImage = function(req, res) {
@@ -502,44 +526,6 @@ exports.getMapImage = function(req, res) {
         } else {
             console.log('请求的头像' + mapImageId + '传输成功')
         }
-    })
-
-}
-
-
-exports.testBody = function(req, res) {
-    var files = req.files
-
-    var body = req.body
-    var mapLabel = new MapLabel()
-
-    for (i = 0, n = files.length; i < n; i++) {
-        var file = files[i]
-        mapLabel.mapImage.push(file.filename)
-    }
-
-    console.log('files, type:' + typeof(files))
-    console.log('files.filename type:' + typeof(files[0].filename))
-    console.log('files.filename:' + files[0].filename)
-    console.log('files.length' + files.length)
-
-    var coordinates = body.coordinates.split(',')
-    console.log('coordinates[0]:' + coordinates[0])
-    console.log('coordinates:' + typeof(coordinates))
-    var coordinate = {
-        coordinates: coordinates,
-        type: body.type
-    }
-    console.log('type:' + typeof(coordinate))
-    console.log('coordinate:' + coordinate)
-
-
-    mapLabel.address = body.address
-    mapLabel.coordinate = coordinate
-    mapLabel.labelMessage = body.labelMessage
-
-    res.json({
-        mapLabel: mapLabel
     })
 
 }

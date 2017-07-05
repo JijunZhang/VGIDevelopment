@@ -4,6 +4,7 @@ var flash = require('../../utils/utils').flash
 var config = require('../../config/config')
 var fs = require('fs')
 
+
 // Create a new error handling controller method
 var getErrorMessage = function(err) {
     // Define the error message variable
@@ -44,23 +45,22 @@ exports.register = function(req, res) {
         // console.log(username)
         // console.log(password)
     var user = new User({ username: username })
-    var message = flash(null, null)
-        // console.log(user)
+
+    // console.log(user)
 
     User.register(user, password, function(error, account) {
         if (error) {
             // console.log(error)
-            if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('exists') > -1) {
-                message = flash(null, 'Sorry. That username already exists. Try again.')
-            } else if (error.name === 'BadRequesterroror' && error.message && error.message.indexOf('argument not set')) {
-                message = flash(null, 'It looks like you\'re missing a required argument. Try again.')
-            } else {
-                message = flash(null, 'Sorry. There was an error processing your request. Please try again or contact technical support.')
-            }
-            res.status(400).json({ error: message.err })
+
+            res.status(400).json({
+                status: {
+                    code: 400,
+                    message: getErrorMessage(error)
+                }
+            })
         } else {
             //  用户成功注册
-            message = flash('Successfully registered user!', null)
+
             res.status(200).json({
                 status: {
                     code: 200,
@@ -84,13 +84,31 @@ exports.login = function(req, res) {
             // console.log(err);
             if (err) {
                 //  生成Token值出错
-                res.status(400).json({ error: 'Issue generating token' })
+                res.status(400).json({
+                    status: {
+                        code: 400,
+                        message: 'token值生成失败'
+                    }
+                })
             } else {
-                res.status(200).json({ token: usersToken })
+                //生成成功则返回token值
+                res.status(200).json({
+                    status: {
+                        code: 200,
+                        message: 'token值生成成功'
+                    },
+                    data: usersToken
+                })
             }
         })
     } else {
-        res.status(400).json({ error: 'The user is logged in.' })
+        //用户登录了，再次登录时，提示已登录
+        res.status(400).json({
+            status: {
+                code: 400,
+                message: '用户已登录'
+            }
+        })
     }
 }
 
@@ -101,14 +119,24 @@ exports.login = function(req, res) {
  * @param {Object} res the response object
  */
 exports.logout = function(req, res) {
-    var messages = flash('Logged out', null)
+
     User.invalidateUserToken(req.user.username, function(err, user) {
         // console.log('user: ', user)
         if (err) {
             console.log(err)
-            res.json({ error: 'Issue finding user (in unsuccessful attempt to invalidate token).' })
+            res.json({
+                status: {
+                    code: 400,
+                    message: '用户退出登录失败，token值未销毁'
+                }
+            })
         } else {
-            res.json({ message: 'logged out' })
+            res.json({
+                status: {
+                    code: 200,
+                    message: '用户退出登录成功'
+                }
+            })
         }
     })
 }
@@ -120,12 +148,24 @@ exports.logout = function(req, res) {
  * @param {Object} res the response object
  */
 exports.forgot = function(req, res) {
+    //生成reset_token与reset_token_expires_millis
     User.generateResetToken(req.body.username, function(err, user) {
         if (err) {
-            res.status(400).json({ error: 'Issue finding user.' })
+            res.status(400).json({
+                status: {
+                    code: 400,
+                    message: getErrorMessage(err)
+                }
+            })
         } else {
             var resetToken = user.reset_token
-            res.status(200).json({ resetToken: resetToken })
+            res.status(200).json({
+                status: {
+                    code: 200,
+                    message: 'reset_token生成成功'
+                },
+                data: resetToken
+            })
         }
     })
 }
@@ -138,19 +178,20 @@ exports.forgot = function(req, res) {
  */
 exports.forgotAndReset = function(req, res) {
     var incomingResetToken = req.body.resetToken
-    var newPassword = req.body.new_password
-    var confirmationPassword = req.body.confirm_new_password
+    var newPassword = req.body.newPassword
+    var confirmNewPassword = req.body.confirmNewPassword
         // console.log('Forgot and reset password: incomingToken: ' + incomingToken);
         // console.log("newPassword: ", newPassword);
         // console.log("confirmationPassword: ", confirmationPassword);
-    if (incomingResetToken && (newPassword === confirmationPassword)) {
+    if (incomingResetToken && (newPassword === confirmNewPassword)) {
+        //利用resetToken来查找用户信息
         User.findUserByResetTokenOnly(incomingResetToken, function(err, user) {
             // console.log(err);
             var currentTime = Date.now()
             var expiredTime = user.reset_token_expires_millis
-            console.log(currentTime)
-            console.log(user)
-            console.log(expiredTime)
+                // console.log(currentTime)
+                // console.log(user)
+                // console.log(expiredTime)
             if (currentTime < expiredTime) {
                 user.setPassword(newPassword, function(err, user) {
                     if (err) {
@@ -165,12 +206,24 @@ exports.forgotAndReset = function(req, res) {
                             cb(err, null)
                         } else {
                             //  客户端需要重新登陆以重新获取令牌
-                            res.status(200).json({ info: 'Password reset.' })
+                            res.status(200).json({
+                                status: {
+                                    code: 200,
+                                    message: '密码重新设置成功'
+                                }
+                            })
                         }
                     })
                 })
             } else {
-                res.status(400).json({ error: 'Reset token expired.' })
+                //reset_token过期时，销毁reset_token与reset_token_expires_millis
+                User.invalidateResetToken(incomingResetToken)
+                res.status(400).json({
+                    status: {
+                        code: 400,
+                        message: 'reset_token已经过期，请重新输入用户名，再次生成reset_token'
+                    }
+                })
             }
         })
     }
@@ -178,6 +231,7 @@ exports.forgotAndReset = function(req, res) {
 
 /**
  * 本地用户重置密码控制方法/Forgot method
+ * 用户知道密码，重新设置密码
  *
  * @param {Object} req the request object
  * @param {Object} res the response object
@@ -185,25 +239,37 @@ exports.forgotAndReset = function(req, res) {
 exports.resetPassword = function(req, res) {
     console.log('GOT IN')
     var username = req.body.username
-    var currentPassword = req.body.current_password
-    var newPassword = req.body.new_password
-    var confirmationPassword = req.body.confirm_new_password
+    var currentPassword = req.body.currentPassword
+    var newPassword = req.body.newPassword
+    var confirmNewPassword = req.body.confirmNewPassword
         // console.log("username: ", username);
         // console.log("currentPassword: ", currentPassword);
         // console.log("newPassword: ", newPassword);
         // console.log("confirmationPassword: ", confirmationPassword);
 
     // 利用req.user中的信息来判断输入用户名和原始密码的正确性
-    if (username && currentPassword && newPassword && confirmationPassword && (newPassword === confirmationPassword)) {
+    if (username && currentPassword && newPassword && confirmNewPassword && (newPassword === confirmNewPassword)) {
         User.findUserByUsernameOnly(username, function(err, user) {
             if (err) {
                 console.log('error: ', err)
-                res.status(400).json({ err: 'Issue while finding user.' })
+                res.status(400).json({
+                    status: {
+                        code: 400,
+                        message: '数据库查找用户出错'
+                    }
+                })
             } else if (!user) {
                 console.log('Unknown user')
-                res.status(400).json({ err: 'Unknown username: ' + username })
+                res.status(400).json({
+                    status: {
+                        code: 400,
+                        message: '此用户不存在'
+                    }
+                })
             } else if (user) {
                 console.log('FOUND USER .. now going call User.authenticate...')
+
+                //用户认证
                 User.authenticate()(username, currentPassword, function(err, isMatch, options) {
                     if (err) {
                         console.log('error: ', err)
@@ -211,6 +277,7 @@ exports.resetPassword = function(req, res) {
                     } else if (!isMatch) {
                         res.status(400).json({ err: 'Current password does not match' })
                     } else {
+                        //重新设置密码
                         user.setPassword(newPassword, function(err, user) {
                             if (err) {
                                 console.log('error: ', err)
@@ -223,7 +290,12 @@ exports.resetPassword = function(req, res) {
                                     cb(err, null)
                                 } else {
                                     //  客户端需要重新登陆以重新获取令牌
-                                    res.status(200).json({ info: 'Password updated.' })
+                                    res.status(200).json({
+                                        status: {
+                                            code: 200,
+                                            message: '用户重新设置密码成功'
+                                        }
+                                    })
                                 }
                             })
                         })
@@ -261,7 +333,12 @@ exports.jwtAuth = function(req, res, next) {
                 // token值过期时，销毁token值，退出登录
                 // 前台考虑退出登录问题
                 User.invalidateUserToken(decoded.username)
-                return res.status(400).send('Access token has expires')
+                return res.status(400).json({
+                    status: {
+                        code: 400,
+                        message: 'token值已经过期，请重新登录'
+                    }
+                })
             }
 
             User.findUser(decoded.username, incomingToken, function(err, user) {
@@ -296,7 +373,12 @@ exports.jwtAuth = function(req, res, next) {
 // 中间件，用于检验token之后，检查req.user是否为已认证用户
 exports.requireAuth = function(req, res, next) {
     if (!req.user) {
-        return res.status(401).send('Not authorized')
+        return res.status(401).json({
+            status: {
+                code: 401,
+                message: '用户未认证，没有取出用户信息'
+            }
+        })
     } else {
         next()
     }
@@ -525,9 +607,9 @@ exports.updateUserInfo = function(req, res) {
 //取出用户信息，剔除掉敏感字段
 exports.getUserInfo = function(req, res) {
 
-    //取出要更新的用户，req.user由token值出取出
+    //取出用户，req.user由token值出取出
     var user = req.user
-    User.find({ username: user.username }, { _id: 0, token: 0 }, function(err, usr) {
+    User.findOne({ username: user.username }, { _id: 0, token: 0 }, function(err, usr) {
         if (err) {
             return res.json({
                 status: {
@@ -553,70 +635,144 @@ exports.uploadAvatar = function(req, res) {
     var user = req.user
     var file = req.file
 
-
-    //如果用户头像名称不存在，则进行第一次上传头像事件，即将字段名保存在用户的avatar字段中
-    //并且将头像保存在相应的位置；如果头像名称已经存在，则进行修改头像事件，删除原头像，将字段
-    //avatar中保存的头像名称改变为修改之后的，然后再次保存用户信息
-    if (!user.avatar) {
-        //保存头像信息
-        saveAvatar(res, user, file)
-    } else {
-        //提取原始头像的路径
-        var oldAvatarName = user.avatar
-        var oldAvatarPath = config.upload.path + '/' + oldAvatarName
-        oldAvatarPath = oldAvatarPath.replace(/\//g, '\\')
-            //console.log('oldAvatarPath:' + oldAvatarPath)
-
-        //删除原始头像    此处使用res.json会报错，提示未设置头部
-        //此处要再看看文件模块信息
-        fs.exists(oldAvatarPath, function(existAvatar) {
-            if (existAvatar) {
-                fs.unlink(oldAvatarPath, function(err) {
-                    if (err) {
-                        console.log('没有删除原始头像，修改头像失败')
-                    }
-
-                })
-            } else {
-                console.log('原始头像不存在')
-            }
-        })
-
-        //保存修改之后的头像
-        saveAvatar(res, user, file)
-    }
-}
-
-function saveAvatar(res, user, file) {
-    if (file.filename) {
+    //没有图片传入时，file中不包含任何信息，不能使用属性length，filename
+    if (file) {
         //保存用户的头像名称
         user.avatar = file.filename
-        user.save(function(err) {
-            if (err) {
-                return res.json({
-                    status: {
-                        code: 400,
-                        message: '头像上传成功，但是保存头像名称失败'
-                    }
-                })
-            } else {
-                res.json({
-                    status: {
-                        code: 200,
-                        message: '在数据库中保存头像名称成功'
-                    },
-                    data: file.filename //此处返回信息根据前台需要可修改
-                })
-            }
-        })
+
     } else {
-        res.json({
+        //如果没有头像上传，则返回此提示信息
+        return res.json({
             status: {
                 code: 200,
-                message: '头像上传失败'
+                message: '没有头像上传'
             }
         })
     }
+
+    //保存上传的图片字段
+    user.save(function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '头像上传成功，但是保存头像名称失败'
+                }
+            })
+        } else {
+            res.json({
+                status: {
+                    code: 200,
+                    message: '在数据库中保存头像名称成功'
+                },
+                //此处返回信息根据前台需要可修改
+                //不要使用file.filename，没有传入图片时，此属性没有信息
+                data: user.avatar
+            })
+        }
+    })
+
+}
+
+//更新头像操作
+exports.updateAvatar = function(req, res) {
+
+    //使用利用token获取的用户信息
+    var user = req.user
+    var file = req.file
+
+    //更新头像时，首先要删除原始头像
+    //提取原始头像的路径
+    var oldAvatarName = user.avatar
+    var oldAvatarPath = config.upload.path + '/' + oldAvatarName
+    oldAvatarPath = oldAvatarPath.replace(/\//g, '\\')
+        //console.log('oldAvatarPath:' + oldAvatarPath)
+
+    //删除原始头像    此处使用res.json会报错，提示未设置头部
+    //此处要再看看文件模块信息
+    fs.exists(oldAvatarPath, function(existAvatar) {
+        if (existAvatar) {
+            fs.unlink(oldAvatarPath, function(err) {
+                if (err) {
+                    console.log('没有删除原始头像，修改头像失败')
+                }
+
+            })
+        } else {
+            console.log('原始头像不存在')
+        }
+    })
+
+    //再处理更新的图片
+    //没有图片传入时，file中不包含任何信息，不能使用属性length，filename
+    if (file) {
+        //保存用户的头像名称
+        user.avatar = file.filename
+
+    } else {
+
+        //用于更新头像操作时，没有头像上传，将此字段赋值为null
+        user.avatar = null
+    }
+
+    //保存上传的图片字段
+    user.save(function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '修改头像上传成功，但是保存修改头像名称失败'
+                }
+            })
+        } else {
+            res.json({
+                status: {
+                    code: 200,
+                    message: '在数据库中保存修改头像名称成功'
+                },
+                //此处返回信息根据前台需要可修改
+                //不要使用file.filename，没有传入图片时，此属性没有信息
+                data: user.avatar
+            })
+        }
+    })
+}
+
+//此方法暂时没用
+function saveAvatar(res, user, file) {
+    //没有图片传入时，file中不包含任何信息，不能使用属性length，filename
+    if (file) {
+        //保存用户的头像名称
+        user.avatar = file.filename
+
+    } else {
+
+        //如果没有头像上传，则将此字段赋值为null
+        //用于更新头像操作时，没有头像上传，将此字段赋值为null
+        user.avatar = null
+    }
+
+    //保存上传的图片字段
+    user.save(function(err) {
+        if (err) {
+            return res.json({
+                status: {
+                    code: 400,
+                    message: '头像上传成功，但是保存头像名称失败'
+                }
+            })
+        } else {
+            res.json({
+                status: {
+                    code: 200,
+                    message: '在数据库中保存头像名称成功'
+                },
+                //此处返回信息根据前台需要可修改
+                //不要使用file.filename，没有传入图片时，此属性没有信息
+                data: user.avatar
+            })
+        }
+    })
 }
 
 //此处使用res.sendFile传送文件，但是实际开发过程中不会使用此方法

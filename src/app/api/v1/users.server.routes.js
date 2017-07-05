@@ -46,6 +46,9 @@ router.route('/info/getUserInfo')
 router.route('/upload/avatar')
     .post(users.jwtAuth, users.requireAuth, upload.single('avatar'), users.uploadAvatar)
 
+router.route('/upload/updateAvatar')
+    .post(users.jwtAuth, users.requireAuth, upload.single('avatar'), users.updateAvatar)
+
 //获取头像
 router.route('/upload/getAvatar/:avatarName')
     .post(users.jwtAuth, users.requireAuth, users.getAvatar)
