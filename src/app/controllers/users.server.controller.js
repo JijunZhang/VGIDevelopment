@@ -561,6 +561,8 @@ exports.updateUserInfo = function(req, res) {
     var user = req.user
 
     //更新此用户的信息
+    //用户的真实姓名
+    user.name = req.body.name || ''
     user.email = req.body.email || ''
     user.age = req.body.age || ''
     user.gender = req.body.gender || ''

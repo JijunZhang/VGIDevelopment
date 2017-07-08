@@ -76,8 +76,10 @@ var UserSchema = new Schema({
 
     //  用户核心信息
 
-    firstName: String,
-    lastName: String,
+    //用户的真实姓名
+    name: {
+        type: String
+    },
     age: {
         //  年龄
         type: Number
